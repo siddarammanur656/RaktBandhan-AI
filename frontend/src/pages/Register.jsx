@@ -120,6 +120,36 @@ export default function Register() {
               <Input id="city" placeholder="e.g. Mumbai" value={formData.city} onChange={handleChange} disabled={isLoading} />
             </div>
           </div>
+          
+          <div className="space-y-2">
+            <Button type="button" variant="outline" className="w-full" onClick={() => {
+              if (navigator.geolocation) {
+                toast.info("Detecting location...");
+                navigator.geolocation.getCurrentPosition(
+                  (position) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      latitude: position.coords.latitude,
+                      longitude: position.coords.longitude
+                    }));
+                    toast.success("Location detected successfully!");
+                  },
+                  (error) => {
+                    toast.error("Could not get location. Please allow location permissions.");
+                  }
+                );
+              } else {
+                toast.error("Geolocation is not supported by your browser");
+              }
+            }}>
+              Detect My Precise Location (Optional but Recommended)
+            </Button>
+            {formData.latitude && formData.longitude && (
+              <p className="text-xs text-green-600 font-medium text-center">
+                ✓ Location saved: {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
+              </p>
+            )}
+          </div>
 
           <Button type="submit" className="w-full h-12 text-lg font-bold bg-gradient-to-r from-primary to-rose-500 hover:from-primary/90 hover:to-rose-500/90 shadow-lg hover:shadow-primary/25 transition-all duration-300" disabled={isLoading}>
             {isLoading ? 'Registering...' : 'Create Account'}

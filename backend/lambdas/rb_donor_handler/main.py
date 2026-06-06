@@ -168,14 +168,22 @@ def get_dashboard(current_user: dict = Depends(get_current_user)):
             "location": item.get("location")
         })
 
+    score = int(current_user.get("reliability_score", 0))
+    if score >= 70:
+        calculated_tier = "Gold"
+    elif score >= 30:
+        calculated_tier = "Silver"
+    else:
+        calculated_tier = "Bronze"
+
     return {
         "success": True,
         "data": {
             "donor": {
                 "name": current_user.get("name", "Unknown"),
                 "blood_group": current_user.get("blood_group", "Unknown"),
-                "reliability_score": int(current_user.get("reliability_score", 0)),
-                "tier": current_user.get("tier", "Bronze"),
+                "reliability_score": score,
+                "tier": calculated_tier,
                 "total_donations": int(current_user.get("total_donations", 0)),
                 "next_eligible_date": current_user.get("next_eligible_date"),
                 "days_until_eligible": days_until_eligible,

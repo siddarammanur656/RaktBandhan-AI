@@ -38,22 +38,42 @@ def handler(event, context):
     blood_group = request_item.get("blood_group", "O+")
     patient_name = request_item.get("patient_name", "A Patient")
     location = request_item.get("location", "Hospital")
+    req_lat = request_item.get("latitude")
+    req_lng = request_item.get("longitude")
     
-    # 2. Match Donors (Simplistic hackathon logic)
-    # We fetch donors with matching blood group
+    # 2. Match Donors (Self-Healing / Fallback logic)
+    # First get all active donors with matching blood group
     response = users_table.scan(
         FilterExpression=Attr("role").eq("donor") & Attr("status").eq("active") & Attr("blood_group").eq(blood_group)
     )
     all_donors = response.get("Items", [])
     
-    # Sort them by some arbitrary reliability or distance (mocked here)
-    # For Thalassemia round-robin, we normally pick a specific one. Here we just pick based on batch_index.
+    import math
+    def haversine(lat1, lon1, lat2, lon2):
+        if lat1 is None or lon1 is None or lat2 is None or lon2 is None: return 999.9
+        R = 6371.0
+        dLat = math.radians(float(lat2) - float(lat1))
+        dLon = math.radians(float(lon2) - float(lon1))
+        a = math.sin(dLat/2)**2 + math.cos(math.radians(float(lat1))) * math.cos(math.radians(float(lat2))) * math.sin(dLon/2)**2
+        return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    # Calculate distance and sort
+    for d in all_donors:
+        d['distance'] = haversine(req_lat, req_lng, d.get("latitude"), d.get("longitude"))
+        
+    # Self-Healing: If not global_pool_fallback, restrict to 50km
+    if not global_pool_fallback:
+        all_donors = [d for d in all_donors if d['distance'] <= 50.0]
+        
+    # Sort by distance, then by reliability score
+    all_donors.sort(key=lambda x: (x['distance'], -int(x.get('reliability_score', 0))))
+    
     batch_size = 5
     start_idx = batch_index * batch_size
     end_idx = start_idx + batch_size
     
     if start_idx >= len(all_donors):
-        # We exhausted all donors
+        # We exhausted all donors. Trigger Self-Healing flag if not already fallback
         return {
             "success": False,
             "exhausted": True,
@@ -69,7 +89,7 @@ def handler(event, context):
             "donor_id": d.get("user_id"),
             "donor_name": d.get("name", "Unknown"),
             "donor_email": d.get("email", "test@example.com"),
-            "distance_km": 5.0  # mocked
+            "distance_km": round(d['distance'], 1) if d['distance'] < 999 else None
         })
         
     return {
