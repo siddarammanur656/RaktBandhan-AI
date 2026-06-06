@@ -137,8 +137,48 @@ def create_rb_donations():
     except dynamodb.exceptions.ResourceInUseException:
         print("Table rb_donations already exists.")
 
+def create_rb_schedules():
+    try:
+        response = dynamodb.create_table(
+            TableName='rb_schedules',
+            AttributeDefinitions=[
+                {'AttributeName': 'schedule_id', 'AttributeType': 'S'},
+                {'AttributeName': 'patient_id', 'AttributeType': 'S'},
+                {'AttributeName': 'active_status', 'AttributeType': 'S'},
+                {'AttributeName': 'next_transfusion_date', 'AttributeType': 'S'}
+            ],
+            KeySchema=[
+                {'AttributeName': 'schedule_id', 'KeyType': 'HASH'}
+            ],
+            GlobalSecondaryIndexes=[
+                {
+                    'IndexName': 'patient-index',
+                    'KeySchema': [
+                        {'AttributeName': 'patient_id', 'KeyType': 'HASH'}
+                    ],
+                    'Projection': {'ProjectionType': 'ALL'}
+                },
+                {
+                    'IndexName': 'active-date-index',
+                    'KeySchema': [
+                        {'AttributeName': 'active_status', 'KeyType': 'HASH'},
+                        {'AttributeName': 'next_transfusion_date', 'KeyType': 'RANGE'}
+                    ],
+                    'Projection': {'ProjectionType': 'ALL'}
+                }
+            ],
+            BillingMode='PAY_PER_REQUEST'
+        )
+        print("Creating table rb_schedules...")
+        waiter = dynamodb.get_waiter('table_exists')
+        waiter.wait(TableName='rb_schedules')
+        print("Table rb_schedules created successfully.")
+    except dynamodb.exceptions.ResourceInUseException:
+        print("Table rb_schedules already exists.")
+
 if __name__ == '__main__':
     create_rb_users()
     create_rb_requests()
     create_rb_donations()
+    create_rb_schedules()
 
