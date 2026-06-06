@@ -1,0 +1,23 @@
+# Explicit User Ignores
+Files/
+docs/
+.env
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.pytest_cache/
+.DS_Store
+
+# Frontend / Node
+node_modules/
+dist/
+build/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
