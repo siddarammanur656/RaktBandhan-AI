@@ -1,0 +1,75 @@
+{
+  "Comment": "A state machine to manage the RaktBandhan outreach automation, including Thalassemia round-robin sub-flows.",
+  "StartAt": "MatchDonors",
+  "States": {
+    "MatchDonors": {
+      "Type": "Task",
+      "Resource": "${MatchDonorsFunctionArn}",
+      "Next": "SendOutreachEmails",
+      "ResultPath": "$.MatchResults"
+    },
+    "SendOutreachEmails": {
+      "Type": "Task",
+      "Resource": "${SendOutreachFunctionArn}",
+      "Next": "Wait30Minutes",
+      "ResultPath": "$.OutreachResults"
+    },
+    "Wait30Minutes": {
+      "Type": "Wait",
+      "Seconds": 1800,
+      "Next": "CheckResponses"
+    },
+    "CheckResponses": {
+      "Type": "Task",
+      "Resource": "${CheckResponsesFunctionArn}",
+      "Next": "EvaluateResponses",
+      "ResultPath": "$.ResponseStatus"
+    },
+    "EvaluateResponses": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.ResponseStatus.donor_accepted",
+          "BooleanEquals": true,
+          "Next": "SuccessState"
+        }
+      ],
+      "Default": "CheckThalassemiaFallback"
+    },
+    "CheckThalassemiaFallback": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.is_thalassemia_request",
+          "BooleanEquals": true,
+          "Next": "FindSubstituteDonor"
+        }
+      ],
+      "Default": "EscalateToNextBatch"
+    },
+    "FindSubstituteDonor": {
+      "Type": "Task",
+      "Resource": "${MatchDonorsFunctionArn}",
+      "Parameters": {
+        "global_pool_fallback": true,
+        "request_id.$": "$.request_id",
+        "patient_id.$": "$.patient_id"
+      },
+      "ResultPath": "$.MatchResults",
+      "Next": "SendOutreachEmails"
+    },
+    "EscalateToNextBatch": {
+      "Type": "Task",
+      "Resource": "${MatchDonorsFunctionArn}",
+      "Parameters": {
+        "batch_index.$": "$.batch_index",
+        "request_id.$": "$.request_id"
+      },
+      "ResultPath": "$.MatchResults",
+      "Next": "SendOutreachEmails"
+    },
+    "SuccessState": {
+      "Type": "Succeed"
+    }
+  }
+}

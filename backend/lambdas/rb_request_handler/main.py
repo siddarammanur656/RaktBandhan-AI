@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, Header, Query
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 from datetime import datetime
@@ -146,6 +147,38 @@ def get_request(request_id: str):
             "confirmed_at": req.get("confirmed_at")
         }
     }
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
+@app.get("/api/requests/accept")
+def accept_request(request_id: str, donor_id: str):
+    response = requests_table.get_item(Key={"request_id": request_id})
+    req = response.get("Item")
+    if not req:
+        return RedirectResponse(url=f"{FRONTEND_URL}/thank-you?error=notfound")
+        
+    if req.get("status") in ["confirmed", "fulfilled"]:
+        return RedirectResponse(url=f"{FRONTEND_URL}/thank-you?status=already_filled")
+        
+    # Update DB to assign donor
+    requests_table.update_item(
+        Key={"request_id": request_id},
+        UpdateExpression="SET #s = :s, assigned_donor = :d, confirmed_at = :t",
+        ExpressionAttributeNames={"#s": "status"},
+        ExpressionAttributeValues={
+            ":s": "confirmed",
+            ":d": donor_id,
+            ":t": datetime.utcnow().isoformat() + "Z"
+        }
+    )
+    
+    # In a real app, here we would trigger EventBridge Scheduler to send the reminder 1 day before
+    
+    return RedirectResponse(url=f"{FRONTEND_URL}/thank-you?status=success")
+
+@app.get("/api/requests/decline")
+def decline_request(request_id: str, donor_id: str):
+    return RedirectResponse(url=f"{FRONTEND_URL}/thank-you?status=declined")
 
 @app.get("/api/requests")
 def list_requests(status: str = Query(None), limit: int = Query(50), admin_user: dict = Depends(get_admin_user)):

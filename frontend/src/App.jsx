@@ -3,6 +3,7 @@ import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ThankYou from './pages/ThankYou';
 import { AuthProvider } from './hooks/useAuth';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 
@@ -25,6 +26,7 @@ function App() {
             <Route index element={<Home />} />
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
+            <Route path="thank-you" element={<ThankYou />} />
             
             {/* Protected Routes */}
             <Route element={<ProtectedRoute allowedRoles={['donor']} />}>

@@ -1,69 +1,87 @@
+import json
 import boto3
 import os
-import uuid
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
-
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 
 REGION = os.getenv("AWS_REGION", "us-east-1")
 ENDPOINT = os.getenv("DYNAMODB_ENDPOINT")
-SCHEDULES_TABLE = os.getenv("SCHEDULES_TABLE", "rb_schedules")
-REQUESTS_TABLE = os.getenv("REQUESTS_TABLE", "rb_requests")
+SCHEDULES_TABLE_NAME = os.getenv("SCHEDULES_TABLE", "rb_schedules")
+REQUESTS_TABLE_NAME = os.getenv("REQUESTS_TABLE", "rb_requests")
 
 if ENDPOINT:
     dynamodb = boto3.resource("dynamodb", region_name=REGION, endpoint_url=ENDPOINT)
 else:
     dynamodb = boto3.resource("dynamodb", region_name=REGION)
 
-schedules_table = dynamodb.Table(SCHEDULES_TABLE)
-requests_table = dynamodb.Table(REQUESTS_TABLE)
+schedules_table = dynamodb.Table(SCHEDULES_TABLE_NAME)
+requests_table = dynamodb.Table(REQUESTS_TABLE_NAME)
 
-def lambda_handler(event, context):
-    print("Running Schedule Manager (CRON)...")
+def handler(event, context):
+    print("ScheduleManager Event:", json.dumps(event))
     
-    # In a real app we'd query by an index, or scan for next_occurrence <= today
-    today = datetime.utcnow().strftime("%Y-%m-%d")
-    
-    response = schedules_table.scan()
-    schedules = response.get('Items', [])
-    
+    # 1. Fetch all active schedules
+    try:
+        response = schedules_table.scan(
+            FilterExpression="#s = :active",
+            ExpressionAttributeNames={"#s": "status"},
+            ExpressionAttributeValues={":active": "active"}
+        )
+        schedules = response.get("Items", [])
+    except Exception as e:
+        print("Failed to fetch schedules:", e)
+        return {"success": False, "error": str(e)}
+        
+    now = datetime.utcnow()
     created_count = 0
-    for sched in schedules:
-        if sched.get('status') == 'active' and sched.get('next_occurrence', '') <= today:
-            # Create a new blood request
-            patient_id = sched['patient_id']
-            req_id = f"req_auto_{uuid.uuid4().hex[:8]}"
+    
+    for schedule in schedules:
+        next_date_str = schedule.get("next_transfusion_date")
+        if not next_date_str:
+            continue
             
-            requests_table.put_item(Item={
-                "request_id": req_id,
-                "patient_id": patient_id,
+        try:
+            next_date = datetime.strptime(next_date_str, "%Y-%m-%d")
+        except ValueError:
+            continue
+            
+        # If the transfusion is within the next 7 days, trigger the matching workflow
+        days_until = (next_date - now).days
+        if 0 <= days_until <= 7:
+            # Check if we already created a request for this cycle
+            last_request_date = schedule.get("last_request_created_date")
+            if last_request_date and last_request_date == next_date_str:
+                continue # Already handled
+                
+            # Create a new Request in DynamoDB
+            import uuid
+            request_id = f"req_thal_{uuid.uuid4().hex[:8]}"
+            
+            new_req = {
+                "request_id": request_id,
+                "patient_id": schedule.get("patient_id"),
+                "blood_group": schedule.get("blood_group"),
+                "quantity_units": 1,
+                "city": schedule.get("city", "Unknown"),
+                "urgency": "scheduled",
+                "required_by_date": next_date_str,
                 "status": "matching",
-                "blood_group": "Unknown (Fetch from User)",
-                "created_at": datetime.utcnow().isoformat() + "Z",
-                "source": "automated_schedule",
-                "schedule_id": sched['schedule_id']
-            })
+                "is_thalassemia": True,
+                "created_at": now.isoformat() + "Z"
+            }
             
-            # Update schedule to next occurrence
-            freq = int(sched.get('frequency_days', 30))
-            next_occ = (datetime.utcnow() + timedelta(days=freq)).strftime("%Y-%m-%d")
+            requests_table.put_item(Item=new_req)
+            print(f"Created Thalassemia request {request_id} for patient {schedule.get('patient_id')}")
             
+            # Update the schedule to note we created it
             schedules_table.update_item(
-                Key={"schedule_id": sched['schedule_id']},
-                UpdateExpression="set next_occurrence = :n, last_triggered = :l",
-                ExpressionAttributeValues={
-                    ":n": next_occ,
-                    ":l": datetime.utcnow().isoformat() + "Z"
-                }
+                Key={"schedule_id": schedule["schedule_id"]},
+                UpdateExpression="SET last_request_created_date = :d",
+                ExpressionAttributeValues={":d": next_date_str}
             )
+            
             created_count += 1
-            print(f"Created auto-request {req_id} for patient {patient_id}. Next occurrence: {next_occ}")
             
     return {
         "success": True,
-        "message": f"Processed {created_count} schedules."
+        "requests_created": created_count
     }
-
-if __name__ == "__main__":
-    lambda_handler({}, None)
