@@ -6,7 +6,7 @@ from jose import jwt, JWTError
 import boto3
 from boto3.dynamodb.conditions import Key
 import os
-import reverse_geocoder as rg
+
 from decimal import Decimal
 import uuid
 from dotenv import load_dotenv
@@ -64,18 +64,18 @@ def get_current_user(authorization: str = Header(None)):
         raise HTTPException(status_code=404, detail={"success": False, "error": "User not found", "code": "NOT_FOUND"})
     return user
 
-def geocode(lat: float, lng: float):
-    coords = (lat, lng)
-    results = rg.search(coords)
-    if results:
-        loc = results[0]
-        city = loc.get('name', 'Unknown')
-        return city
-    return "Unknown"
+from location_service import reverse_geocode, forward_geocode
 
 @app.post("/api/patients/profile")
 def update_profile(request: PatientProfileRequest, current_user: dict = Depends(get_current_user)):
-    city = geocode(request.latitude, request.longitude)
+    lat, lng = request.latitude, request.longitude
+    city, area = "Unknown", "Unknown"
+    
+    if request.address_text and (not lat or not lng):
+        lat, lng = forward_geocode(request.address_text)
+        
+    if lat and lng:
+        city, area = reverse_geocode(lat, lng)
     
     # Update Patient profile
     users_table.update_item(
@@ -84,8 +84,8 @@ def update_profile(request: PatientProfileRequest, current_user: dict = Depends(
         ExpressionAttributeValues={
             ":b": request.blood_group,
             ":d": request.date_of_birth,
-            ":lat": Decimal(str(request.latitude)),
-            ":lng": Decimal(str(request.longitude)),
+            ":lat": Decimal(str(lat)) if lat else None,
+            ":lng": Decimal(str(lng)) if lng else None,
             ":c": city,
             ":f": Decimal(str(request.transfusion_frequency_days)),
             ":gn": request.guardian_name,

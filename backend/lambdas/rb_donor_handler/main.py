@@ -6,7 +6,7 @@ from jose import jwt, JWTError
 import boto3
 from boto3.dynamodb.conditions import Key
 import os
-import reverse_geocoder as rg
+
 from decimal import Decimal
 from dotenv import load_dotenv
 
@@ -61,19 +61,18 @@ def get_current_user(authorization: str = Header(None)):
         raise HTTPException(status_code=404, detail={"success": False, "error": "User not found", "code": "NOT_FOUND"})
     return user
 
-def geocode(lat: float, lng: float):
-    coords = (lat, lng)
-    results = rg.search(coords)
-    if results:
-        loc = results[0]
-        city = loc.get('name', 'Unknown')
-        area = loc.get('admin2', city)
-        return city, area
-    return "Unknown", "Unknown"
+from location_service import reverse_geocode, forward_geocode
 
 @app.post("/api/donors/profile")
 def update_profile(request: ProfileUpdateRequest, current_user: dict = Depends(get_current_user)):
-    city, area = geocode(request.latitude, request.longitude)
+    lat, lng = request.latitude, request.longitude
+    city, area = "Unknown", "Unknown"
+    
+    if request.address_text and (not lat or not lng):
+        lat, lng = forward_geocode(request.address_text)
+        
+    if lat and lng:
+        city, area = reverse_geocode(lat, lng)
     
     users_table.update_item(
         Key={"user_id": current_user["user_id"]},
@@ -82,8 +81,8 @@ def update_profile(request: ProfileUpdateRequest, current_user: dict = Depends(g
             ":b": request.blood_group,
             ":g": request.gender,
             ":d": request.date_of_birth,
-            ":lat": Decimal(str(request.latitude)),
-            ":lng": Decimal(str(request.longitude)),
+            ":lat": Decimal(str(lat)) if lat else None,
+            ":lng": Decimal(str(lng)) if lng else None,
             ":dt": request.donor_type,
             ":c": city,
             ":a": area,
@@ -106,14 +105,21 @@ def update_profile(request: ProfileUpdateRequest, current_user: dict = Depends(g
 
 @app.put("/api/donors/location")
 def update_location(request: LocationUpdateRequest, current_user: dict = Depends(get_current_user)):
-    city, area = geocode(request.latitude, request.longitude)
+    lat, lng = request.latitude, request.longitude
+    city, area = "Unknown", "Unknown"
+    
+    if request.address_text and (not lat or not lng):
+        lat, lng = forward_geocode(request.address_text)
+        
+    if lat and lng:
+        city, area = reverse_geocode(lat, lng)
     
     users_table.update_item(
         Key={"user_id": current_user["user_id"]},
         UpdateExpression="set latitude=:lat, longitude=:lng, city=:c, area=:a",
         ExpressionAttributeValues={
-            ":lat": Decimal(str(request.latitude)),
-            ":lng": Decimal(str(request.longitude)),
+            ":lat": Decimal(str(lat)) if lat else None,
+            ":lng": Decimal(str(lng)) if lng else None,
             ":c": city,
             ":a": area
         }

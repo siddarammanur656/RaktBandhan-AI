@@ -11,12 +11,16 @@ export default function Home() {
         Ensuring every Thalassemia patient gets blood on time through AI-powered matching and automated outreach.
       </p>
       <div className="flex gap-4">
-        <Button asChild size="lg" className="bg-red-600 hover:bg-red-700">
-          <Link to="/register">Join as Donor</Link>
-        </Button>
-        <Button asChild variant="outline" size="lg">
-          <Link to="/login">Login</Link>
-        </Button>
+        <Link to="/register">
+          <Button size="lg" className="bg-red-600 hover:bg-red-700">
+            Join as Donor
+          </Button>
+        </Link>
+        <Link to="/login">
+          <Button variant="outline" size="lg">
+            Login
+          </Button>
+        </Link>
       </div>
     </div>
   );

@@ -5,13 +5,15 @@ class ProfileUpdateRequest(BaseModel):
     blood_group: str
     gender: str
     date_of_birth: str
-    latitude: float
-    longitude: float
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    address_text: Optional[str] = None
     donor_type: str
 
 class LocationUpdateRequest(BaseModel):
-    latitude: float
-    longitude: float
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    address_text: Optional[str] = None
 
 class DeclineRequest(BaseModel):
     reason: str

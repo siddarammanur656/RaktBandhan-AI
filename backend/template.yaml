@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: RaktBandhan AI - Unified Backend API
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Environment:
+      Variables:
+        USERS_TABLE: rb_users
+        REQUESTS_TABLE: rb_requests
+        DONATIONS_TABLE: rb_donations
+        SCHEDULES_TABLE: rb_schedules
+
+Resources:
+  UnifiedApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: run_local.handler
+      Runtime: python3.10
+      Architectures:
+        - x86_64
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: rb_users
+        - DynamoDBCrudPolicy:
+            TableName: rb_requests
+        - DynamoDBCrudPolicy:
+            TableName: rb_donations
+        - DynamoDBCrudPolicy:
+            TableName: rb_schedules
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - geo:SearchPlaceIndexForPosition
+                - geo:SearchPlaceIndexForText
+              Resource: '*'
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins:
+            - "*"
+          AllowMethods:
+            - "*"
+          AllowHeaders:
+            - "*"
+          MaxAge: 86400
+
+Outputs:
+  ApiUrl:
+    Description: "API Endpoint URL"
+    Value: !GetAtt UnifiedApiFunctionUrl.FunctionUrl

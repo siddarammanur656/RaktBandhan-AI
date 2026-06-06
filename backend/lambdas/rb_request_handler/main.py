@@ -6,7 +6,7 @@ from jose import jwt, JWTError
 import boto3
 from boto3.dynamodb.conditions import Key
 import os
-import reverse_geocoder as rg
+
 from decimal import Decimal
 import uuid
 from dotenv import load_dotenv
@@ -61,18 +61,18 @@ def get_admin_user(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail={"success": False, "error": "Admin access required", "code": "FORBIDDEN"})
     return current_user
 
-def geocode(lat: float, lng: float):
-    coords = (lat, lng)
-    results = rg.search(coords)
-    if results:
-        loc = results[0]
-        city = loc.get('name', 'Unknown')
-        return city
-    return "Unknown"
+from location_service import reverse_geocode, forward_geocode
 
 @app.post("/api/requests", status_code=201)
 def create_request(payload: CreateRequest, current_user: dict = Depends(get_current_user)):
-    city = geocode(payload.latitude, payload.longitude)
+    lat, lng = payload.latitude, payload.longitude
+    city, area = "Unknown", "Unknown"
+    
+    if payload.address_text and (not lat or not lng):
+        lat, lng = forward_geocode(payload.address_text)
+        
+    if lat and lng:
+        city, area = reverse_geocode(lat, lng)
     
     request_id = f"req_{uuid.uuid4().hex[:8]}"
     now_iso = datetime.utcnow().isoformat() + "Z"
@@ -82,8 +82,8 @@ def create_request(payload: CreateRequest, current_user: dict = Depends(get_curr
         "patient_id": payload.patient_id,
         "blood_group": payload.blood_group,
         "quantity_units": Decimal(str(payload.quantity_units)),
-        "latitude": Decimal(str(payload.latitude)),
-        "longitude": Decimal(str(payload.longitude)),
+        "latitude": Decimal(str(lat)) if lat else None,
+        "longitude": Decimal(str(lng)) if lng else None,
         "city": city,
         "urgency": payload.urgency,
         "required_by_date": payload.required_by_date,

@@ -18,13 +18,14 @@ from lambdas.rb_copilot.main import app as copilot_app
 
 app = FastAPI(title="RaktBandhan AI - Local Aggregator")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+if not os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 app.include_router(auth_app.router)
 app.include_router(donor_app.router)
@@ -38,6 +39,9 @@ app.include_router(copilot_app.router)
 @app.get("/api/health")
 def health_check():
     return {"status": "ok", "message": "Unified Local RaktBandhan API is running."}
+
+from mangum import Mangum
+handler = Mangum(app)
 
 if __name__ == "__main__":
     print("Starting Local RaktBandhan API on port 8000...")
