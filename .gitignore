@@ -13,6 +13,13 @@ env/
 .pytest_cache/
 .DS_Store
 
+# Local Mock Data & Notebooks
+*.ipynb
+.ipynb_checkpoints/
+backend/dynamodb_local/*.db
+backend/data/emails/
+
+
 # Frontend / Node
 node_modules/
 dist/
