@@ -30,12 +30,17 @@ build/
 .env.*
 !.env.example
 
+# User Requested Ignores
+docs/
+Files/
+
 # Python / Backend
 __pycache__/
 *.py[cod]
 *$py.class
 venv/
 env/
+.venv/
 .pytest_cache/
 .coverage
 htmlcov/
@@ -44,6 +49,8 @@ htmlcov/
 .aws-sam/
 .serverless/
 
-# User Requested Ignores
-docs/
-Files/
+# Local Mock Data & Notebooks
+*.ipynb
+.ipynb_checkpoints/
+backend/dynamodb_local/*.db
+backend/data/emails/
