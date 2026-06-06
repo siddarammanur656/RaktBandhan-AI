@@ -42,6 +42,7 @@ A two-layer system:
 
 ### For Admins
 - 🤖 80% reduction in manual coordination
+- 🧠 ML-Powered Donor Prediction Score (XGBoost) for optimal matching
 - 📊 Real-time dashboard with AI insights
 - 💡 Natural language queries ("Show inactive O+ donors in Hyderabad")
 - 📈 Daily auto-generated reports
@@ -73,7 +74,7 @@ DynamoDB | Bedrock | SES | Step Functions | EventBridge | SageMaker
 | **Backend** | Python FastAPI on AWS Lambda |
 | **Database** | Amazon DynamoDB |
 | **AI/LLM** | Amazon Bedrock (Claude 3.5) |
-| **ML** | Amazon SageMaker (Churn Prediction) |
+| **ML** | XGBoost & Scikit-Learn via AWS S3 and Lambda |
 | **Workflows** | AWS Step Functions |
 | **Scheduling** | Amazon EventBridge |
 | **Email** | Amazon SES |
@@ -195,10 +196,11 @@ aws lambda update-function-code \
 ## 🏆 Innovations
 
 1. **Donor Reliability Score** — Like CIBIL for donors (0-100)
-2. **Recurring Standing Orders** — Auto-scheduled transfusions
-3. **Self-Healing AI** — Learns from failures, updates rules
-4. **Conversational Memory** — Chatbot remembers every donor
-5. **Maximum Admin Automation** — 13+ tasks fully automated
+2. **Predictive ML Matching** — XGBoost model deployed via S3 to predict the probability of a donor showing up
+3. **Recurring Standing Orders** — Auto-scheduled transfusions
+4. **Self-Healing AI** — Learns from failures, updates rules
+5. **Conversational Memory** — Chatbot remembers every donor
+6. **Maximum Admin Automation** — 13+ tasks fully automated
 
 **Full innovation details:** See [docs/INNOVATION.md](./docs/INNOVATION.md)
 

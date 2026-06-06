@@ -3,18 +3,36 @@ import { X, Send, HeartPulse } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useChatbot } from '@/hooks/useChatbot';
+import { useAuth } from '@/hooks/useAuth';
 import ChatMessage from './ChatMessage';
 
 export default function ChatWindow({ onClose }) {
   const { messages, isTyping, sendMessage } = useChatbot();
+  const { user } = useAuth();
   const [input, setInput] = useState('');
   const scrollRef = useRef(null);
 
-  const quickPrompts = [
-    "Am I eligible to donate?",
-    "Where is the nearest hospital?",
-    "I have an emergency"
-  ];
+  const role = user?.role || 'donor';
+  
+  const rolePrompts = {
+    admin: [
+      "Show me active requests",
+      "How many donors are eligible?",
+      "Generate daily report"
+    ],
+    donor: [
+      "Am I eligible to donate?",
+      "Where is the nearest hospital?",
+      "Update my location"
+    ],
+    patient: [
+      "When is my next transfusion?",
+      "How to request blood?",
+      "I have an emergency"
+    ]
+  };
+
+  const quickPrompts = rolePrompts[role] || rolePrompts.donor;
 
   useEffect(() => {
     if (scrollRef.current) {

@@ -63,11 +63,16 @@ def chat_message(request: ChatMessageRequest, current_user: dict = Depends(get_c
     blood_group = current_user.get("blood_group", "Unknown")
     last_donation = current_user.get("last_donation_date", "Never")
     next_eligible = current_user.get("next_eligible_date", "Now")
+    user_role = current_user.get("role", "donor")
     
-    system_prompt = f"""You are RaktBandhan AI, a helpful assistant for a blood donation platform.
-You are talking to {user_name}, whose blood group is {blood_group}.
-Their last donation date was {last_donation}, and they are eligible to donate again on {next_eligible}.
-Provide a short, friendly, and helpful response to their question."""
+    system_prompt = f"""You are RaktBandhan AI, a strict role-based assistant for a blood donation platform.
+You are talking to {user_name}, who is a '{user_role}'.
+Their blood group is {blood_group}. Last donation: {last_donation}. Next eligible: {next_eligible}.
+
+CRITICAL RULES (Role-Based Access Control):
+1. ONLY answer questions related to blood donation, the RaktBandhan platform, or their specific role as a {user_role}.
+2. If the user asks ANY unrelated or random questions (e.g., coding, general knowledge, weather), politely decline and state you can only assist with blood donation matters.
+3. Keep your answers EXTREMELY brief, concise, and to the point (maximum 2-3 sentences). Do not provide lengthy explanations."""
 
     user_message = request.message
     

@@ -7,8 +7,8 @@ export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
 
-  // Only show for Donors and Patients, hide for Admin
-  if (!user || user.role === 'admin') return null;
+  // Show for all logged in users
+  if (!user) return null;
 
   return (
     <>
