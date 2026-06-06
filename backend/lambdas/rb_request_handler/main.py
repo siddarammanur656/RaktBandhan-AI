@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Header, Query
+from fastapi import FastAPI, Depends, HTTPException, Header, Query, BackgroundTasks
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
@@ -7,6 +7,8 @@ from jose import jwt, JWTError
 import boto3
 from boto3.dynamodb.conditions import Key
 import os
+import httpx
+import traceback
 
 from decimal import Decimal
 import uuid
@@ -62,10 +64,66 @@ def get_admin_user(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail={"success": False, "error": "Admin access required", "code": "FORBIDDEN"})
     return current_user
 
+def trigger_matching_and_outreach(request_id: str, lat: float, lng: float, blood_group: str, city: str, required_by_date: str, token: str):
+    try:
+        base_url = os.getenv("FRONTEND_URL", "http://localhost:5173").replace("5173", "8000")
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        match_payload = {
+            "latitude": lat if lat else 17.3850,
+            "longitude": lng if lng else 78.4867,
+            "blood_group": blood_group,
+            "max_distance_km": 50,
+            "limit": 3
+        }
+        
+        print(f"Triggering AI Matching for {request_id}...")
+        with httpx.Client() as client:
+            resp = client.post(f"{base_url}/api/match/find-donors", json=match_payload, headers=headers, timeout=30.0)
+            
+            if resp.status_code != 200:
+                print(f"Matching failed: {resp.text}")
+                return
+                
+            match_data = resp.json()
+            donors = match_data.get("data", {}).get("donors", [])
+            
+            print(f"Found {len(donors)} top donors. Triggering outreach...")
+            
+            contacted = []
+            for d in donors:
+                outreach_payload = {
+                    "request_id": request_id,
+                    "donor_id": d["user_id"],
+                    "donor_name": d["name"],
+                    "donor_email": f"{d['name'].split()[0].lower()}@mockdonor.com",
+                    "patient_name": "Patient",
+                    "blood_group": blood_group,
+                    "hospital_location": city,
+                    "distance_km": d.get("distance_km", 0),
+                    "required_by_date": required_by_date
+                }
+                
+                o_resp = client.post(f"{base_url}/api/outreach/send", json=outreach_payload, headers=headers, timeout=10.0)
+                if o_resp.status_code == 200:
+                    contacted.append(d["user_id"])
+            
+            if contacted:
+                requests_table.update_item(
+                    Key={"request_id": request_id},
+                    UpdateExpression="SET donors_contacted = :c",
+                    ExpressionAttributeValues={":c": contacted}
+                )
+                print(f"Outreach complete for {request_id}. Contacted: {contacted}")
+                
+    except Exception as e:
+        print(f"Orchestration failed for {request_id}: {e}")
+        traceback.print_exc()
+
 from location_service import reverse_geocode, forward_geocode
 
 @app.post("/api/requests", status_code=201)
-def create_request(payload: CreateRequest, current_user: dict = Depends(get_current_user)):
+def create_request(payload: CreateRequest, background_tasks: BackgroundTasks, authorization: str = Header(None), current_user: dict = Depends(get_current_user)):
     lat, lng = payload.latitude, payload.longitude
     city, area = "Unknown", "Unknown"
     
@@ -97,6 +155,10 @@ def create_request(payload: CreateRequest, current_user: dict = Depends(get_curr
     }
     
     requests_table.put_item(Item=new_req)
+    
+    # Trigger AI matching & emailing
+    token = authorization.split(" ")[1] if authorization else ""
+    background_tasks.add_task(trigger_matching_and_outreach, request_id, float(lat) if lat else 0.0, float(lng) if lng else 0.0, payload.blood_group, city, payload.required_by_date, token)
     
     return {
         "success": True,

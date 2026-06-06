@@ -15,6 +15,7 @@ from lambdas.rb_request_handler.main import app as request_app
 from lambdas.rb_match_donors.main import app as match_app
 from lambdas.rb_chatbot.main import app as chatbot_app
 from lambdas.rb_copilot.main import app as copilot_app
+from lambdas.rb_send_outreach.main import app as outreach_app
 
 app = FastAPI(title="RaktBandhan AI - Local Aggregator")
 
@@ -35,6 +36,7 @@ app.include_router(request_app.router)
 app.include_router(match_app.router)
 app.include_router(chatbot_app.router)
 app.include_router(copilot_app.router)
+app.include_router(outreach_app.router)
 
 @app.get("/api/health")
 def health_check():

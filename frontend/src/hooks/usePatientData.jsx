@@ -63,11 +63,26 @@ export function usePatientData() {
     fetchDashboard();
   }, [fetchDashboard]);
 
+  const createRequest = async (requestData) => {
+    try {
+      const response = await client.post('/api/requests', requestData);
+      if (response.data?.success) {
+        toast.success("Request created! AI is finding donors...");
+        fetchDashboard(); // Refresh data
+        return response.data;
+      }
+    } catch (error) {
+      toast.error("Failed to create request");
+      throw error;
+    }
+  };
+
   return {
     nextTransfusion,
     assignedDonor,
     schedule,
     history,
-    loading
+    loading,
+    createRequest
   };
 }

@@ -2,16 +2,27 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePatientData } from '@/hooks/usePatientData';
 import { Activity, Clock, Users, History } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import NextTransfusionCard from '@/components/patient/NextTransfusionCard';
 import AssignedDonorCard from '@/components/patient/AssignedDonorCard';
 import UpcomingSchedule from '@/components/patient/UpcomingSchedule';
 import TransfusionHistory from '@/components/patient/TransfusionHistory';
+import CreateRequestModal from '@/components/patient/CreateRequestModal';
 
 export default function PatientDashboard() {
   const { user } = useAuth();
-  const { nextTransfusion, assignedDonor, schedule, history } = usePatientData();
+  const { nextTransfusion, assignedDonor, schedule, history, createRequest } = usePatientData();
   const [activeTab, setActiveTab] = useState('overview');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleCreateRequest = async (formData) => {
+    await createRequest({
+      ...formData,
+      patient_id: user.user_id,
+    });
+  };
 
   const navigation = [
     { id: 'overview', name: 'Overview', icon: Activity },
@@ -24,10 +35,13 @@ export default function PatientDashboard() {
     <DashboardLayout title="Patient Portal" navigation={navigation} activeTab={activeTab} setActiveTab={setActiveTab}>
       {activeTab === 'overview' && (
         <div className="space-y-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
             <h1 className="text-4xl font-extrabold text-foreground tracking-tight">
               Hello, <span className="text-gradient">{user?.name?.split(' ')[0] || 'User'}</span> 👋
             </h1>
+            <Button onClick={() => setIsModalOpen(true)} className="bg-red-600 hover:bg-red-700 text-white shadow-lg flex items-center gap-2 px-6 h-12 text-md font-semibold">
+              <PlusCircle className="h-5 w-5" /> Request Blood
+            </Button>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -84,6 +98,13 @@ export default function PatientDashboard() {
           </div>
         </div>
       )}
+
+      <CreateRequestModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateRequest}
+        bloodGroup={user?.blood_group}
+      />
     </DashboardLayout>
   );
 }
