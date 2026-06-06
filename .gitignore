@@ -54,3 +54,7 @@ htmlcov/
 .ipynb_checkpoints/
 backend/dynamodb_local/*.db
 backend/data/emails/
+
+# Machine Learning
+*.pkl
+*.csv
