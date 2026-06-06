@@ -163,7 +163,7 @@ def accept_request(request_id: str, donor_id: str):
     # Update DB to assign donor
     requests_table.update_item(
         Key={"request_id": request_id},
-        UpdateExpression="SET #s = :s, assigned_donor = :d, confirmed_at = :t",
+        UpdateExpression="SET #s = :s, assigned_donor = :d, assigned_donor_id = :d, confirmed_at = :t",
         ExpressionAttributeNames={"#s": "status"},
         ExpressionAttributeValues={
             ":s": "confirmed",
@@ -171,6 +171,21 @@ def accept_request(request_id: str, donor_id: str):
             ":t": datetime.utcnow().isoformat() + "Z"
         }
     )
+    
+    # Increment donor reliability score and total donations
+    try:
+        users_table.update_item(
+            Key={"user_id": donor_id},
+            UpdateExpression="SET reliability_score = if_not_exists(reliability_score, :start) + :inc, total_donations = if_not_exists(total_donations, :zero) + :one",
+            ExpressionAttributeValues={
+                ":start": Decimal("50"),
+                ":inc": Decimal("10"),
+                ":zero": Decimal("0"),
+                ":one": Decimal("1")
+            }
+        )
+    except Exception as e:
+        print(f"Failed to update donor score: {e}")
     
     # In a real app, here we would trigger EventBridge Scheduler to send the reminder 1 day before
     

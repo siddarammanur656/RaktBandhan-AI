@@ -13,6 +13,8 @@ Globals:
         DONATIONS_TABLE: rb_donations
         SCHEDULES_TABLE: rb_schedules
         AWS_REGION_CUSTOM: us-east-1
+        SES_SENDER_EMAIL: siddarammanur656@gmail.com
+        FRONTEND_URL: https://d1vpdf3jgq8mte.cloudfront.net
 
 Resources:
   # The existing FastAPI Monolith
@@ -118,6 +120,9 @@ Resources:
             - Effect: Allow
               Action: bedrock:InvokeModel
               Resource: '*'
+      Environment:
+        Variables:
+          API_BASE_URL: !GetAtt UnifiedApiFunctionUrl.FunctionUrl
 
   CheckResponsesFunction:
     Type: AWS::Serverless::Function

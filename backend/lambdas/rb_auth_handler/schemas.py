@@ -10,6 +10,8 @@ class RegisterRequest(BaseModel):
     blood_group: Optional[str] = None
     gender: Optional[str] = None
     city: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class LoginRequest(BaseModel):
     email: EmailStr

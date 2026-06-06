@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import ReliabilityScoreCard from '@/components/donor/ReliabilityScoreCard';
+import client from '@/api/client';
 
 export default function DonorProfile() {
   const { user } = useAuth();
@@ -28,13 +29,20 @@ export default function DonorProfile() {
 
     setIsUpdatingLocation(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const lat = position.coords.latitude.toFixed(4);
         const lng = position.coords.longitude.toFixed(4);
-        setLocation({ lat, lng });
-        toast.success('Location updated successfully!');
-        setIsUpdatingLocation(false);
-        localStorage.setItem(`rb_donor_location_${user?.user_id}`, JSON.stringify({ lat, lng }));
+        try {
+          await client.put('/api/donors/location', { latitude: lat, longitude: lng });
+          setLocation({ lat, lng });
+          toast.success('Location updated successfully!');
+          localStorage.setItem(`rb_donor_location_${user?.user_id}`, JSON.stringify({ lat, lng }));
+        } catch (error) {
+          console.error("Error updating location:", error);
+          toast.error('Failed to sync location with server.');
+        } finally {
+          setIsUpdatingLocation(false);
+        }
       },
       (error) => {
         toast.error('Unable to retrieve your location. Please check browser permissions.');

@@ -9,6 +9,7 @@ import os
 import boto3
 from dotenv import load_dotenv
 import logging
+from decimal import Decimal
 
 from .schemas import RegisterRequest, LoginRequest
 
@@ -103,7 +104,9 @@ def register(request: RegisterRequest):
         "status": "active",
         "blood_group": request.blood_group or "Unknown",
         "gender": request.gender or "Unknown",
-        "city": request.city or "Unknown"
+        "city": request.city or "Unknown",
+        "latitude": Decimal(str(request.latitude)) if request.latitude else None,
+        "longitude": Decimal(str(request.longitude)) if request.longitude else None
     }
     
     users_table.put_item(Item=new_user)

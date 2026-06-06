@@ -75,6 +75,16 @@ CRITICAL RULES (Role-Based Access Control):
 3. Keep your answers EXTREMELY brief, concise, and to the point (maximum 2-3 sentences). Do not provide lengthy explanations."""
 
     user_message = request.message
+    session_id = request.session_id or f"sess_{uuid.uuid4().hex[:8]}"
+    
+    # Retrieve chat history from user profile (limit to last 10 messages to save tokens)
+    chat_history = current_user.get("chat_history", [])[-10:]
+    
+    messages = []
+    for msg in chat_history:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+        
+    messages.append({"role": "user", "content": user_message})
     
     # Try calling AWS Bedrock
     try:
@@ -82,12 +92,7 @@ CRITICAL RULES (Role-Based Access Control):
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": 300,
             "system": system_prompt,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": user_message
-                }
-            ]
+            "messages": messages
         }
         
         response = bedrock_client.invoke_model(
@@ -105,7 +110,19 @@ CRITICAL RULES (Role-Based Access Control):
         print(f"Bedrock invocation failed: {e}")
         ai_response = f"Hi {user_name}! I am RaktBandhan AI (Local Mock). You asked: '{user_message}'. Based on your profile, you are eligible to donate on {next_eligible}."
 
-    session_id = request.session_id or f"sess_{uuid.uuid4().hex[:8]}"
+    # Update chat history
+    chat_history.append({"role": "user", "content": user_message})
+    chat_history.append({"role": "assistant", "content": ai_response})
+    
+    # Save back to DynamoDB
+    try:
+        users_table.update_item(
+            Key={"user_id": current_user["user_id"]},
+            UpdateExpression="SET chat_history = :ch",
+            ExpressionAttributeValues={":ch": chat_history}
+        )
+    except Exception as e:
+        print(f"Failed to save chat history: {e}")
     
     return {
         "success": True,
