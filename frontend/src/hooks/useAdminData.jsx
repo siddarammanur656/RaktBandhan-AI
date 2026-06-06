@@ -27,5 +27,20 @@ export function useAdminData() {
     { id: 2, text: "Donor retention dropped by 4% this week. Consider sending personalized thank you notes.", action: "View Report" }
   ]);
 
-  return { kpis, activeRequests, donors, insights };
+  const askCoPilot = async (query) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          text: "Based on the latest data, the Madhapur region currently has the lowest auto-fulfillment rate (32%). There are 14 pending requests and only 2 active B- donors in a 5km radius.",
+          data: [
+            { region: 'Madhapur', rate: '32%', pending: 14 },
+            { region: 'Gachibowli', rate: '45%', pending: 8 },
+            { region: 'Jubilee Hills', rate: '68%', pending: 3 }
+          ]
+        });
+      }, 1500);
+    });
+  };
+
+  return { kpis, activeRequests, donors, insights, askCoPilot };
 }

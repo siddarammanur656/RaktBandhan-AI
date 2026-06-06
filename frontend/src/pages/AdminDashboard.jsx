@@ -7,10 +7,11 @@ import ActiveRequestsTable from '@/components/admin/ActiveRequestsTable';
 import EscalationsAlert from '@/components/admin/EscalationsAlert';
 import DonorPoolAnalytics from '@/components/admin/DonorPoolAnalytics';
 import AIInsightsPanel from '@/components/admin/AIInsightsPanel';
+import AdminCoPilotQuery from '@/components/admin/AdminCoPilotQuery';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const { kpis, activeRequests, donors, insights } = useAdminData();
+  const { kpis, activeRequests, donors, insights, askCoPilot } = useAdminData();
   const [activeTab, setActiveTab] = useState('overview');
 
   const navigation = [
@@ -98,19 +99,9 @@ export default function AdminDashboard() {
                   <span className="text-sm text-gray-500 mt-1 block">Powered by Bedrock</span>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
                 <AIInsightsPanel insights={insights} />
-                
-                {/* Placeholder for query interface */}
-                <div className="bg-gray-50 border border-gray-200 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center h-full min-h-[300px]">
-                  <Sparkles className="h-10 w-10 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Natural Language Querying</h3>
-                  <p className="text-gray-500 text-sm max-w-sm">
-                    Ask questions like "Which areas have the lowest auto-fulfillment rate today?"
-                    <br/><br/>
-                    (Coming in Phase 7)
-                  </p>
-                </div>
+                <AdminCoPilotQuery onAsk={askCoPilot} />
               </div>
             </div>
           )}
