@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; margin: 0; padding: 20px; color: #1f2937; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .header { background: linear-gradient(to right, #10b981, #059669); color: white; padding: 30px 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 800; }
+        .content { padding: 30px 20px; }
+        .highlight-box { background-color: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 15px; margin: 20px 0; }
+        .highlight-box p { margin: 8px 0; font-size: 15px; }
+        .footer { text-align: center; padding: 20px; font-size: 12px; color: #6b7280; border-top: 1px solid #f3f4f6; }
+        .check-icon { font-size: 48px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="check-icon">✅</div>
+            <h1>Donor Successfully Secured!</h1>
+        </div>
+        <div class="content">
+            <p>Hello <strong>{patient_name}</strong>,</p>
+            <p>We have fantastic news! We successfully found a matching donor for your recent blood request through the RaktBandhan platform.</p>
+            
+            <div class="highlight-box">
+                <p><strong>🩸 Blood Group:</strong> {blood_group}</p>
+                <p><strong>🏥 Scheduled Location:</strong> {hospital_location}</p>
+                <p><strong>📅 Confirmed Date:</strong> {confirmed_date}</p>
+                <p><strong>👤 Donor Name:</strong> {donor_name}</p>
+            </div>
+            
+            <p>Your donor has been notified and has confirmed their availability for this date. The hospital administration has also been updated.</p>
+            <p>If you have any questions or need to make changes, please contact the hospital blood bank or reach out to us via the platform.</p>
+            <p>Wishing you the very best,<br>The RaktBandhan Team ❤️</p>
+        </div>
+        <div class="footer">
+            This is an automated notification from RaktBandhan AI Platform. Please do not reply directly to this email.
+        </div>
+    </div>
+</body>
+</html>

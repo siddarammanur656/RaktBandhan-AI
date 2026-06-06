@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 import os
 
-from .schemas import OutreachRequest
+from .schemas import OutreachRequest, PatientNotificationRequest
 
 app = FastAPI(title="RaktBandhan AI - Outreach Handler (Local Mock)")
 
@@ -49,6 +49,40 @@ def send_outreach_email(payload: OutreachRequest):
     return {
         "success": True,
         "message": f"Email successfully generated and sent to {payload.donor_email}",
+        "data": {
+            "file_path": output_path
+        }
+    }
+
+PATIENT_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), 'templates', 'patient_notification.html')
+
+@app.post("/api/outreach/notify-patient")
+def notify_patient_email(payload: PatientNotificationRequest):
+    if not os.path.exists(PATIENT_TEMPLATE_PATH):
+        raise HTTPException(status_code=500, detail="Patient template not found")
+        
+    with open(PATIENT_TEMPLATE_PATH, 'r', encoding='utf-8') as f:
+        html_template = f.read()
+        
+    html_content = html_template \
+        .replace("{patient_name}", payload.patient_name) \
+        .replace("{blood_group}", payload.blood_group) \
+        .replace("{hospital_location}", payload.hospital_location) \
+        .replace("{confirmed_date}", payload.confirmed_date) \
+        .replace("{donor_name}", payload.donor_name)
+    
+    os.makedirs(EMAILS_OUTPUT_DIR, exist_ok=True)
+    output_filename = f"patient_notification_{payload.request_id}.html"
+    output_path = os.path.join(EMAILS_OUTPUT_DIR, output_filename)
+    
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+        
+    print(f"Mock SES: Sent patient notification to {payload.patient_email}. Saved to {output_path}")
+    
+    return {
+        "success": True,
+        "message": f"Patient notification successfully generated and sent to {payload.patient_email}",
         "data": {
             "file_path": output_path
         }

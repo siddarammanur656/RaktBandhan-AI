@@ -129,6 +129,46 @@ def trigger_matching_and_outreach(request_id: str, lat: float, lng: float, blood
         print(f"Orchestration failed for {request_id}: {e}")
         traceback.print_exc()
 
+def trigger_patient_notification(request_id: str, req_data: dict, donor_id: str, confirmed_date: str):
+    try:
+        base_url = os.getenv("FRONTEND_URL", "http://localhost:5173").replace("5173", "8000")
+        
+        d_resp = users_table.get_item(Key={"user_id": donor_id})
+        donor_name = d_resp.get("Item", {}).get("name", "A generous donor") if d_resp.get("Item") else "A generous donor"
+        
+        patient_id = req_data.get("patient_id")
+        p_name = "Patient"
+        p_email = f"patient_{patient_id}@mockpatient.com"
+        
+        if patient_id:
+            p_resp = users_table.get_item(Key={"user_id": patient_id})
+            if p_resp.get("Item"):
+                p_name = p_resp.get("Item").get("name", "Patient")
+                if p_resp.get("Item").get("email"):
+                    p_email = p_resp.get("Item").get("email")
+                    
+        payload = {
+            "request_id": request_id,
+            "patient_name": p_name,
+            "patient_email": p_email,
+            "donor_name": donor_name,
+            "blood_group": req_data.get("blood_group", "Unknown"),
+            "hospital_location": req_data.get("city", "Hospital"),
+            "confirmed_date": confirmed_date
+        }
+        
+        print(f"Triggering Patient Notification for {request_id}...")
+        with httpx.Client() as client:
+            resp = client.post(f"{base_url}/api/outreach/notify-patient", json=payload, timeout=10.0)
+            if resp.status_code != 200:
+                print(f"Failed to notify patient: {resp.text}")
+            else:
+                print(f"Patient successfully notified for request {request_id}")
+                
+    except Exception as e:
+        print(f"Failed to trigger patient notification: {e}")
+        traceback.print_exc()
+
 from location_service import reverse_geocode, forward_geocode
 
 @app.post("/api/requests", status_code=201)
@@ -222,7 +262,7 @@ def get_request(request_id: str):
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 @app.get("/api/requests/accept")
-def accept_request(request_id: str, donor_id: str):
+def accept_request(request_id: str, donor_id: str, background_tasks: BackgroundTasks):
     response = requests_table.get_item(Key={"request_id": request_id})
     req = response.get("Item")
     if not req:
@@ -260,6 +300,9 @@ def accept_request(request_id: str, donor_id: str):
     
     # In a real app, here we would trigger EventBridge Scheduler to send the reminder 1 day before
     
+    # Trigger patient notification
+    background_tasks.add_task(trigger_patient_notification, request_id, req, donor_id, req.get("required_by_date", "Soon"))
+    
     return RedirectResponse(url=f"{FRONTEND_URL}/thank-you?status=success")
 
 @app.get("/api/requests/decline")
@@ -273,7 +316,7 @@ def decline_request(request_id: str, donor_id: str):
     return RedirectResponse(url=f"{FRONTEND_URL}/thank-you?status=declined")
 
 @app.post("/api/requests/{request_id}/reschedule")
-def reschedule_request(request_id: str, payload: RescheduleRequest):
+def reschedule_request(request_id: str, payload: RescheduleRequest, background_tasks: BackgroundTasks):
     response = requests_table.get_item(Key={"request_id": request_id})
     req = response.get("Item")
     if not req:
@@ -291,6 +334,10 @@ def reschedule_request(request_id: str, payload: RescheduleRequest):
             ":donor": payload.donor_id
         }
     )
+    
+    # Trigger patient notification
+    background_tasks.add_task(trigger_patient_notification, request_id, req, payload.donor_id, payload.new_date)
+    
     return {"success": True, "message": "Request rescheduled successfully."}
 
 @app.post("/api/requests/{request_id}/opt-out")
