@@ -10,9 +10,11 @@ import ProtectedRoute from './components/layout/ProtectedRoute';
 import DonorDashboard from './pages/DonorDashboard';
 import DonorProfile from './pages/DonorProfile';
 
-// Dummy dashboards for now
-const PatientDashboard = () => <div className="p-8 text-2xl font-bold text-center">Patient Dashboard</div>;
-const AdminDashboard = () => <div className="p-8 text-2xl font-bold text-center">Admin Dashboard</div>;
+// Patient Portal
+import PatientDashboard from './pages/PatientDashboard';
+
+// Admin Portal
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   return (
