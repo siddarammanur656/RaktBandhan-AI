@@ -6,9 +6,7 @@ from jose import jwt, JWTError
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
 import os
-import pandas as pd
-import joblib
-import traceback
+import json
 from dotenv import load_dotenv
 
 from .schemas import MatchRequest
@@ -30,38 +28,36 @@ REGION = os.getenv("AWS_REGION", "us-east-1")
 ENDPOINT = os.getenv("DYNAMODB_ENDPOINT")
 USERS_TABLE_NAME = os.getenv("USERS_TABLE", "rb_users")
 
-MODEL_BUCKET = os.getenv("MODEL_S3_BUCKET")
-MODEL_KEY = os.getenv("MODEL_S3_KEY", "donor_prediction_model.pkl")
-LOCAL_MODEL_PATH = os.path.join(os.path.dirname(__file__), "donor_prediction_model.pkl")
+SAGEMAKER_ENDPOINT_NAME = os.getenv("SAGEMAKER_ENDPOINT_NAME", "raktbandhan-donor-prediction-endpoint")
 
-ml_pipeline = None
-
-def load_ml_model():
-    global ml_pipeline
-    if ml_pipeline is not None:
-        return
-        
+def get_ml_prediction(donor_features: dict) -> float:
+    """
+    Calls the Amazon SageMaker Serverless Endpoint to get the ML prediction score.
+    """
     try:
-        if MODEL_BUCKET:
-            print(f"Loading ML model from S3 bucket {MODEL_BUCKET}...")
-            s3 = boto3.client('s3', region_name=REGION)
-            tmp_path = "/tmp/donor_prediction_model.pkl"
-            s3.download_file(MODEL_BUCKET, MODEL_KEY, tmp_path)
-            ml_pipeline = joblib.load(tmp_path)
-            print("Model loaded from S3 successfully.")
-        else:
-            print(f"Loading ML model from local path {LOCAL_MODEL_PATH}...")
-            if os.path.exists(LOCAL_MODEL_PATH):
-                ml_pipeline = joblib.load(LOCAL_MODEL_PATH)
-                print("Model loaded locally successfully.")
-            else:
-                print("Model file not found locally.")
+        sagemaker = boto3.client('sagemaker-runtime', region_name=REGION)
+        # In a real scenario, convert dict to CSV or JSON as expected by XGBoost
+        payload = json.dumps([donor_features])
+        
+        # Mocking for local/hackathon without actual endpoint
+        if SAGEMAKER_ENDPOINT_NAME == "raktbandhan-donor-prediction-endpoint":
+            # Simple mock logic based on features
+            score = 0.5
+            if donor_features.get("eligibility_status") == "Eligible": score += 0.2
+            if donor_features.get("distance_km", 100) < 10: score += 0.2
+            return min(0.99, score)
+            
+        response = sagemaker.invoke_endpoint(
+            EndpointName=SAGEMAKER_ENDPOINT_NAME,
+            ContentType='application/json',
+            Body=payload
+        )
+        result = json.loads(response['Body'].read().decode())
+        # Assuming model returns probabilities like [[0.1, 0.9]]
+        return float(result[0][1])
     except Exception as e:
-        print(f"Failed to load ML model: {e}")
-        traceback.print_exc()
-
-# Load model during cold start
-load_ml_model()
+        print(f"SageMaker invocation failed: {e}")
+        return 0.0
 
 JWT_SECRET_KEY = "raktbandhan-local-secret-key"
 JWT_ALGORITHM = "HS256"
@@ -151,24 +147,18 @@ def find_donors(payload: MatchRequest, current_user: dict = Depends(get_current_
         final_score = calculate_reliability_score(base, tot_donations, last_donation)
         tier = get_tier(final_score)
         
-        # 5. Calculate ML Prediction Score
-        ml_prediction_score = 0.0
-        if ml_pipeline:
-            try:
-                feature_dict = {
-                    "blood_group": donor_blood,
-                    "gender": donor.get("gender", "Unknown"),
-                    "latitude": float(lat),
-                    "longitude": float(lng),
-                    "donor_type": donor.get("donor_type", "Standard"),
-                    "eligibility_status": donor.get("eligibility_status", "Eligible"),
-                    "user_donation_active_status": donor.get("user_donation_active_status", "Active")
-                }
-                df_features = pd.DataFrame([feature_dict])
-                prob = ml_pipeline.predict_proba(df_features)
-                ml_prediction_score = float(prob[0][1]) # Probability of class 1
-            except Exception as e:
-                print(f"ML Prediction failed for donor {donor.get('user_id')}: {e}")
+        # 5. Calculate ML Prediction Score using SageMaker
+        feature_dict = {
+            "blood_group": donor_blood,
+            "gender": donor.get("gender", "Unknown"),
+            "latitude": float(lat),
+            "longitude": float(lng),
+            "distance_km": distance,
+            "donor_type": donor.get("donor_type", "Standard"),
+            "eligibility_status": "Eligible" if is_eligible else "Ineligible",
+            "user_donation_active_status": donor.get("status", "active")
+        }
+        ml_prediction_score = get_ml_prediction(feature_dict)
                 
         matched_donors.append({
             "user_id": donor["user_id"],

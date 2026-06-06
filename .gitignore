@@ -58,3 +58,7 @@ backend/data/emails/
 # Machine Learning
 *.pkl
 *.csv
+*.tar.gz
+*.h5
+*.pt
+*.pth

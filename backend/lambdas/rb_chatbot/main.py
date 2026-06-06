@@ -86,7 +86,7 @@ Provide a short, friendly, and helpful response to their question."""
         }
         
         response = bedrock_client.invoke_model(
-            modelId='anthropic.claude-3-haiku-20240307-v1:0', # Standard Haiku model ID on Bedrock
+            modelId='us.anthropic.claude-haiku-4-5-20251001-v1:0', # Standard Haiku model ID on Bedrock
             contentType='application/json',
             accept='application/json',
             body=json.dumps(payload)

@@ -100,7 +100,10 @@ def register(request: RegisterRequest):
         "role": request.role,
         "phone": request.phone,
         "password_hash": hash_password(request.password), # Mock Auth
-        "status": "active"
+        "status": "active",
+        "blood_group": request.blood_group or "Unknown",
+        "gender": request.gender or "Unknown",
+        "city": request.city or "Unknown"
     }
     
     users_table.put_item(Item=new_user)

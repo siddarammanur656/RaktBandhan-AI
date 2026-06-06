@@ -1,4 +1,5 @@
 import { HeartPulse, User } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 export default function ChatMessage({ message }) {
   const isBot = message.isBot;
@@ -17,7 +18,23 @@ export default function ChatMessage({ message }) {
             ? 'bg-card text-card-foreground rounded-bl-none border-border/50' 
             : 'bg-gradient-to-r from-primary to-rose-500 text-primary-foreground rounded-br-none border-transparent'
         }`}>
-          <p className="text-sm font-medium leading-relaxed">{message.text}</p>
+          {isBot ? (
+            <div className="text-sm font-medium leading-relaxed max-w-none text-card-foreground">
+              <ReactMarkdown 
+                components={{
+                  strong: ({node, ...props}) => <span className="font-bold text-foreground" {...props} />,
+                  ul: ({node, ...props}) => <ul className="list-disc pl-5 my-2 space-y-1" {...props} />,
+                  ol: ({node, ...props}) => <ol className="list-decimal pl-5 my-2 space-y-1" {...props} />,
+                  li: ({node, ...props}) => <li className="pl-1" {...props} />,
+                  p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />
+                }}
+              >
+                {message.text}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <p className="text-sm font-medium leading-relaxed">{message.text}</p>
+          )}
         </div>
       </div>
 

@@ -7,6 +7,9 @@ class RegisterRequest(BaseModel):
     name: str
     role: str
     phone: str
+    blood_group: Optional[str] = None
+    gender: Optional[str] = None
+    city: Optional[str] = None
 
 class LoginRequest(BaseModel):
     email: EmailStr
