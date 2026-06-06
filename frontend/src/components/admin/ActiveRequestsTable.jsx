@@ -25,27 +25,35 @@ export default function ActiveRequestsTable({ requests }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {requests.map((req) => (
-            <TableRow key={req.id}>
-              <TableCell className="font-medium text-gray-900">{req.id}</TableCell>
-              <TableCell>{req.patient}</TableCell>
-              <TableCell className="font-bold text-red-600">{req.bloodGroup}</TableCell>
-              <TableCell>{req.hospital}</TableCell>
-              <TableCell>
-                <Badge variant="outline" className={req.urgency === 'High' ? 'text-red-600 border-red-200 bg-red-50' : 'text-yellow-600 border-yellow-200 bg-yellow-50'}>
-                  {req.urgency}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Badge className={`${statusColors[req.status]} hover:${statusColors[req.status]} border-none`}>
-                  {req.status}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50">View Details</Button>
+          {requests.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="h-24 text-center text-gray-500">
+                No active requests found.
               </TableCell>
             </TableRow>
-          ))}
+          ) : (
+            requests.map((req) => (
+              <TableRow key={req.id}>
+                <TableCell className="font-medium text-gray-900">{req.id}</TableCell>
+                <TableCell>{req.patient}</TableCell>
+                <TableCell className="font-bold text-red-600">{req.bloodGroup}</TableCell>
+                <TableCell>{req.hospital}</TableCell>
+                <TableCell>
+                  <Badge variant="outline" className={req.urgency === 'High' ? 'text-red-600 border-red-200 bg-red-50' : 'text-yellow-600 border-yellow-200 bg-yellow-50'}>
+                    {req.urgency}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge className={`${statusColors[req.status]} hover:${statusColors[req.status]} border-none`}>
+                    {req.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50">View Details</Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     </div>
