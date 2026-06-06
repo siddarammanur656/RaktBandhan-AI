@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .header { background-color: #E63946; color: white; padding: 15px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { padding: 20px; }
+        .alert { background-color: #FFF3CD; border-left: 4px solid #FFC107; padding: 10px; margin: 20px 0; }
+        .btn { display: inline-block; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px; }
+        .btn-accept { background-color: #2A9D8F; color: white; }
+        .btn-decline { background-color: #ddd; color: #333; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Urgent Blood Request: You're a Match!</h2>
+        </div>
+        <div class="content">
+            <p>Dear <strong>Donor 93540f08</strong>,</p>
+            <p>Our matching engine at <strong>RaktBandhan AI</strong> has identified you as a high-compatibility match for an urgent blood request.</p>
+            
+            <div class="alert">
+                <p><strong>Patient Name:</strong> Ravi (Test Patient)</p>
+                <p><strong>Required Blood Group:</strong> O Positive</p>
+                <p><strong>Location:</strong> Apollo Hospital, Jubilee Hills</p>
+                <p><strong>Distance:</strong> 0.0 km away</p>
+                <p><strong>Required By:</strong> Today</p>
+            </div>
+
+            <p>Your prompt response can save a life. Please click below to accept or decline the request so we can coordinate accordingly.</p>
+
+            <div style="margin-top: 30px; text-align: center;">
+                <!-- In a real app, these would link to your frontend with a JWT or unique token -->
+                <a href="http://localhost:3000/respond?request=req_test_123&action=accept" class="btn btn-accept">Accept Request</a>
+                <a href="http://localhost:3000/respond?request=req_test_123&action=decline" class="btn btn-decline">Decline</a>
+            </div>
+            
+            <p style="margin-top: 40px; font-size: 0.8em; color: #777;">
+                If you choose to accept, we will instantly share your contact details with the hospital coordinator.
+                <br>Thank you for being a hero!
+            </p>
+        </div>
+    </div>
+</body>
+</html>
