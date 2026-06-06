@@ -1,15 +1,17 @@
 import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
-import { Toaster } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
+import ChatbotWidget from '@/components/chatbot/ChatbotWidget';
 
 export default function Layout() {
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-grow container mx-auto px-4 py-8 max-w-7xl">
         <Outlet />
       </main>
-      <Toaster position="top-center" richColors />
+      <ChatbotWidget />
+      <Toaster position="top-center" />
     </div>
   );
 }
