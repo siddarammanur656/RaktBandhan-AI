@@ -10,6 +10,7 @@ import ProtectedRoute from './components/layout/ProtectedRoute';
 // Donor Portal
 import DonorDashboard from './pages/DonorDashboard';
 import DonorProfile from './pages/DonorProfile';
+import DonorTransfusionAction from './pages/DonorTransfusionAction';
 
 // Patient Portal
 import PatientDashboard from './pages/PatientDashboard';
@@ -27,6 +28,7 @@ function App() {
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
             <Route path="thank-you" element={<ThankYou />} />
+            <Route path="schedule/response/:requestId" element={<DonorTransfusionAction />} />
             
             {/* Protected Routes */}
             <Route element={<ProtectedRoute allowedRoles={['donor']} />}>

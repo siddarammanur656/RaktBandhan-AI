@@ -15,6 +15,15 @@ import uuid
 from dotenv import load_dotenv
 
 from .schemas import CreateRequest
+from pydantic import BaseModel
+
+class RescheduleRequest(BaseModel):
+    new_date: str
+    reason: str
+    donor_id: str
+
+class OptOutRequest(BaseModel):
+    donor_id: str
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 
@@ -255,7 +264,65 @@ def accept_request(request_id: str, donor_id: str):
 
 @app.get("/api/requests/decline")
 def decline_request(request_id: str, donor_id: str):
+    requests_table.update_item(
+        Key={"request_id": request_id},
+        UpdateExpression="SET #s = :s",
+        ExpressionAttributeNames={"#s": "status"},
+        ExpressionAttributeValues={":s": "declined"}
+    )
     return RedirectResponse(url=f"{FRONTEND_URL}/thank-you?status=declined")
+
+@app.post("/api/requests/{request_id}/reschedule")
+def reschedule_request(request_id: str, payload: RescheduleRequest):
+    response = requests_table.get_item(Key={"request_id": request_id})
+    req = response.get("Item")
+    if not req:
+        raise HTTPException(status_code=404, detail={"success": False, "error": "Request not found"})
+
+    requests_table.update_item(
+        Key={"request_id": request_id},
+        UpdateExpression="SET required_by_date = :d, reschedule_reason = :r, #s = :s, confirmed_at = :t, assigned_donor_id = :donor",
+        ExpressionAttributeNames={"#s": "status"},
+        ExpressionAttributeValues={
+            ":d": payload.new_date,
+            ":r": payload.reason,
+            ":s": "confirmed",
+            ":t": datetime.utcnow().isoformat() + "Z",
+            ":donor": payload.donor_id
+        }
+    )
+    return {"success": True, "message": "Request rescheduled successfully."}
+
+@app.post("/api/requests/{request_id}/opt-out")
+def opt_out_circle(request_id: str, payload: OptOutRequest):
+    response = requests_table.get_item(Key={"request_id": request_id})
+    req = response.get("Item")
+    if not req:
+        raise HTTPException(status_code=404, detail={"success": False, "error": "Request not found"})
+        
+    schedule_id = req.get("schedule_id")
+    if schedule_id:
+        schedules_table = boto3.resource("dynamodb", region_name=REGION).Table(os.getenv("SCHEDULES_TABLE", "rb_schedules"))
+        sch_resp = schedules_table.get_item(Key={"schedule_id": schedule_id})
+        sch = sch_resp.get("Item")
+        if sch:
+            donor_circle = sch.get("donor_circle", [])
+            if payload.donor_id in donor_circle:
+                donor_circle.remove(payload.donor_id)
+                schedules_table.update_item(
+                    Key={"schedule_id": schedule_id},
+                    UpdateExpression="SET donor_circle = :dc",
+                    ExpressionAttributeValues={":dc": donor_circle}
+                )
+    
+    # Mark request as declined so the 1-day cron assigns it to the next person
+    requests_table.update_item(
+        Key={"request_id": request_id},
+        UpdateExpression="SET #s = :s",
+        ExpressionAttributeNames={"#s": "status"},
+        ExpressionAttributeValues={":s": "declined"}
+    )
+    return {"success": True, "message": "You have been removed from the donor circle."}
 
 @app.get("/api/requests")
 def list_requests(status: str = Query(None), limit: int = Query(50), admin_user: dict = Depends(get_admin_user)):
