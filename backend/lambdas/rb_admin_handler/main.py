@@ -108,6 +108,16 @@ def get_dashboard(current_admin: dict = Depends(get_current_admin)):
                 "bronze_tier": tier_counts["Bronze"]
             },
             "blood_group_distribution": dict(blood_groups),
+            "donors": [
+                {
+                    "id": d.get("user_id"),
+                    "name": d.get("name", "Unknown"),
+                    "bloodGroup": d.get("blood_group", "Unknown"),
+                    "tier": d.get("tier", "Bronze"),
+                    "score": int(d.get("reliability_score", 0)),
+                    "lastDonation": d.get("last_donation_date", "None")
+                } for d in users if d.get("role") == "donor"
+            ][:10],
             "recent_escalations": [],
             "ai_insights": [
                 "Local Mock: Request fulfillment rate is looking good.",

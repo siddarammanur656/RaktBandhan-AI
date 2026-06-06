@@ -22,27 +22,27 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="flex flex-col md:flex-row min-h-[80vh] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Sidebar */}
-      <div className="w-full md:w-64 bg-gray-50 border-r border-gray-200 p-4 shrink-0">
-        <div className="mb-8 px-4 hidden md:block">
-          <h2 className="text-xl font-bold text-gray-900">Admin Portal</h2>
-          <p className="text-sm text-gray-500">{user?.name}</p>
+    <div className="flex flex-col md:flex-row h-[calc(100vh-8.5rem)] w-full glass-card rounded-3xl overflow-hidden animate-fade-in-up shadow-2xl border border-white/20 dark:border-white/10">
+      {/* Sticky Sidebar */}
+      <div className="w-full md:w-72 bg-sidebar/60 backdrop-blur-md border-r border-border p-6 shrink-0 flex flex-col h-auto md:h-full overflow-y-auto z-10 custom-scrollbar">
+        <div className="mb-10 px-2 hidden md:block">
+          <h2 className="text-2xl font-extrabold text-sidebar-foreground tracking-tight">Admin Portal</h2>
+          <p className="text-sm font-medium text-sidebar-foreground/60 mt-1">{user?.name || 'Administrator'}</p>
         </div>
-        <nav className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
+        <nav className="flex md:flex-col gap-3 overflow-x-auto md:overflow-visible pb-2 md:pb-0 flex-1">
           {navigation.map((item) => {
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                className={`flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-bold transition-all duration-300 whitespace-nowrap group ${
                   isActive 
-                    ? 'bg-blue-50 text-blue-700' 
-                    : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-primary to-rose-500 text-primary-foreground shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5' 
+                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:-translate-y-0.5'
                 }`}
               >
-                <item.icon className={`h-5 w-5 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
+                <item.icon className={`h-6 w-6 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-primary-foreground' : 'text-sidebar-foreground/50 group-hover:text-primary'}`} />
                 {item.name}
               </button>
             );
@@ -50,23 +50,27 @@ export default function AdminDashboard() {
         </nav>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 md:p-8 overflow-y-auto">
-        <div className="max-w-6xl mx-auto">
+      {/* Scrollable Main Content */}
+      <div className="flex-1 p-6 md:p-10 overflow-y-auto bg-background/40 backdrop-blur-sm custom-scrollbar relative">
+        <div className="max-w-6xl mx-auto pb-10">
           {activeTab === 'overview' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Platform Overview</h1>
+            <div className="space-y-10 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              <div className="flex justify-between items-center mb-8">
+                <h1 className="text-4xl font-extrabold text-foreground tracking-tight">Platform Overview</h1>
               </div>
-              <EscalationsAlert count={kpis.escalations} />
-              <KPICards kpis={kpis} />
+              <div className="hover:-translate-y-1 transition-transform duration-300">
+                <EscalationsAlert count={kpis.escalations} />
+              </div>
+              <div className="hover:-translate-y-1 transition-transform duration-300">
+                <KPICards kpis={kpis} />
+              </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                  <h3 className="text-lg font-semibold mb-4 text-gray-900">Recent Requests</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div className="lg:col-span-2 hover:-translate-y-1 transition-transform duration-300">
+                  <h3 className="text-2xl font-bold mb-6 text-foreground tracking-tight">Recent Requests</h3>
                   <ActiveRequestsTable requests={activeRequests.slice(0, 3)} />
                 </div>
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-1 hover:-translate-y-1 transition-transform duration-300">
                   <AIInsightsPanel insights={insights} />
                 </div>
               </div>
@@ -74,34 +78,45 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === 'requests' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Requests Manager</h1>
+            <div className="space-y-10 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              <div className="flex justify-between items-center mb-8">
+                <h1 className="text-4xl font-extrabold text-foreground tracking-tight">Requests Manager</h1>
               </div>
-              <ActiveRequestsTable requests={activeRequests} />
+              <div className="hover:-translate-y-1 transition-transform duration-300">
+                <ActiveRequestsTable requests={activeRequests} />
+              </div>
             </div>
           )}
 
           {activeTab === 'donors' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Donor Pool Analytics</h1>
+            <div className="space-y-10 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              <div className="flex justify-between items-center mb-8">
+                <h1 className="text-4xl font-extrabold text-foreground tracking-tight">Donor Pool Analytics</h1>
               </div>
-              <DonorPoolAnalytics donors={donors} />
+              <div className="hover:-translate-y-1 transition-transform duration-300">
+                <DonorPoolAnalytics donors={donors} />
+              </div>
             </div>
           )}
 
           {activeTab === 'insights' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center mb-6">
+            <div className="space-y-10 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              <div className="flex justify-between items-center mb-8">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">AI Co-Pilot</h1>
-                  <span className="text-sm text-gray-500 mt-1 block">Powered by Bedrock</span>
+                  <h1 className="text-4xl font-extrabold text-foreground flex items-center gap-3 tracking-tight">
+                    <Sparkles className="h-10 w-10 text-primary animate-pulse-slow" />
+                    <span className="text-gradient">AI Co-Pilot</span>
+                  </h1>
+                  <span className="text-base text-primary/80 font-bold mt-2 block uppercase tracking-widest">Powered by Claude 3</span>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-                <AIInsightsPanel insights={insights} />
-                <AdminCoPilotQuery onAsk={askCoPilot} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-stretch">
+                <div className="hover:-translate-y-1 transition-transform duration-300">
+                  <AIInsightsPanel insights={insights} />
+                </div>
+                <div className="hover:-translate-y-1 transition-transform duration-300 relative z-50">
+                  <AdminCoPilotQuery onAsk={askCoPilot} />
+                </div>
               </div>
             </div>
           )}

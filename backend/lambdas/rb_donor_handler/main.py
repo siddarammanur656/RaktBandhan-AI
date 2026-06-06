@@ -10,7 +10,7 @@ import reverse_geocoder as rg
 from decimal import Decimal
 from dotenv import load_dotenv
 
-from schemas import ProfileUpdateRequest, LocationUpdateRequest, DeclineRequest
+from .schemas import ProfileUpdateRequest, LocationUpdateRequest, DeclineRequest
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 

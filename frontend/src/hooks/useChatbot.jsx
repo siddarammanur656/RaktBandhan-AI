@@ -1,31 +1,41 @@
 import { useState } from 'react';
+import client from '../api/client';
+import { toast } from 'sonner';
 
 export function useChatbot() {
   const [messages, setMessages] = useState([
     { id: 1, text: "Hi, I am RaktBandhan AI. How can I help you today?", isBot: true }
   ]);
   const [isTyping, setIsTyping] = useState(false);
+  const [sessionId, setSessionId] = useState(`sess_${Date.now()}`);
 
   const sendMessage = async (text) => {
     const userMsg = { id: Date.now(), text, isBot: false };
     setMessages(prev => [...prev, userMsg]);
     setIsTyping(true);
 
-    setTimeout(() => {
-      let botResponse = "I'm sorry, I don't have information on that right now. Please contact support if it's urgent.";
+    try {
+      const response = await client.post('/api/chat/message', {
+        message: text,
+        session_id: sessionId
+      });
       
-      const lowerText = text.toLowerCase();
-      if (lowerText.includes('eligible') || lowerText.includes('can i donate')) {
-        botResponse = "To be eligible to donate, you generally need to be at least 18 years old, weigh at least 50 kg, and be in good health. If you had a tattoo or major surgery recently, you may need to wait 6 months.";
-      } else if (lowerText.includes('hospital') || lowerText.includes('nearest')) {
-        botResponse = "Your nearest partner hospital is Apollo Hospitals, located 2.1 km away. They are open 24/7 for emergency blood requests.";
-      } else if (lowerText.includes('urgent') || lowerText.includes('emergency')) {
-        botResponse = "If this is a medical emergency, please call the local emergency number immediately. If you need blood urgently, navigate to the 'Request Blood' section.";
+      if (response.data.success) {
+        setMessages(prev => [...prev, { 
+          id: Date.now() + 1, 
+          text: response.data.data.response, 
+          isBot: true 
+        }]);
       }
-
-      setMessages(prev => [...prev, { id: Date.now() + 1, text: botResponse, isBot: true }]);
+    } catch (error) {
+      setMessages(prev => [...prev, { 
+        id: Date.now() + 1, 
+        text: "I'm sorry, I am having trouble connecting to the server. Please try again later.", 
+        isBot: true 
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   return { messages, isTyping, sendMessage };

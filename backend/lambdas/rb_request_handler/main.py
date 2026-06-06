@@ -11,7 +11,7 @@ from decimal import Decimal
 import uuid
 from dotenv import load_dotenv
 
-from schemas import CreateRequest
+from .schemas import CreateRequest
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 

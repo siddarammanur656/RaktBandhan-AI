@@ -8,8 +8,8 @@ from boto3.dynamodb.conditions import Key, Attr
 import os
 from dotenv import load_dotenv
 
-from schemas import MatchRequest
-from utils import calculate_haversine_distance, is_blood_compatible, calculate_reliability_score, get_tier
+from .schemas import MatchRequest
+from .utils import calculate_haversine_distance, is_blood_compatible, calculate_reliability_score, get_tier
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 

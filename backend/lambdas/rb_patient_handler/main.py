@@ -11,7 +11,7 @@ from decimal import Decimal
 import uuid
 from dotenv import load_dotenv
 
-from schemas import PatientProfileRequest
+from .schemas import PatientProfileRequest
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 

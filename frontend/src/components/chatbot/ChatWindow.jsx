@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Send, Minus } from 'lucide-react';
+import { X, Send, HeartPulse } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useChatbot } from '@/hooks/useChatbot';
@@ -35,55 +35,56 @@ export default function ChatWindow({ onClose }) {
   };
 
   return (
-    <div className="fixed bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[400px] h-[550px] max-h-[80vh] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-10 duration-300">
+    <div className="fixed bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[400px] h-[550px] max-h-[80vh] glass-card rounded-3xl flex flex-col z-50 overflow-hidden animate-fade-in-up">
       {/* Header */}
-      <div className="bg-red-600 text-white p-4 flex justify-between items-center shadow-sm z-10">
+      <div className="bg-gradient-to-r from-primary to-rose-500 text-primary-foreground p-5 flex justify-between items-center shadow-md z-10">
         <div>
-          <h3 className="font-bold flex items-center gap-2">
+          <h3 className="font-extrabold flex items-center gap-2 text-lg">
+            <HeartPulse className="h-5 w-5 animate-pulse-slow" />
             RaktBandhan AI
           </h3>
-          <p className="text-xs text-red-100 flex items-center gap-1 mt-0.5">
-            <span className="h-2 w-2 rounded-full bg-green-400"></span> Online
+          <p className="text-xs text-primary-foreground/80 flex items-center gap-1.5 mt-1 font-medium">
+            <span className="h-2 w-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(7ade80,0.8)]"></span> Online
           </p>
         </div>
         <div className="flex items-center">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-red-700 hover:text-white" onClick={onClose}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20 rounded-full transition-colors" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 p-4 overflow-y-auto bg-gray-50 flex flex-col" ref={scrollRef}>
+      <div className="flex-1 p-5 overflow-y-auto bg-background/50 flex flex-col" ref={scrollRef}>
         {messages.map((msg) => (
           <ChatMessage key={msg.id} message={msg} />
         ))}
         {isTyping && (
-          <div className="flex w-full mt-4 space-x-3 max-w-[85%] mr-auto items-end">
-            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-red-100 flex items-center justify-center mb-1">
+          <div className="flex w-full mt-4 space-x-3 max-w-[85%] mr-auto items-end animate-fade-in">
+            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mb-1 border border-primary/20">
               <span className="h-5 w-5 flex items-center justify-center gap-1">
-                <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-bounce"></span>
-                <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
-                <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
+                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"></span>
+                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
               </span>
             </div>
-            <div className="p-3 bg-gray-200 rounded-2xl rounded-bl-none">
-              <p className="text-sm text-gray-500 italic">typing...</p>
+            <div className="p-3 bg-muted rounded-2xl rounded-bl-none shadow-sm border border-border/50">
+              <p className="text-sm text-muted-foreground italic font-medium">Claude is thinking...</p>
             </div>
           </div>
         )}
       </div>
 
       {/* Input Area */}
-      <div className="p-3 bg-white border-t border-gray-100">
-        {/* Quick Prompts - Only show if it's the start of the chat to keep UI clean */}
+      <div className="p-4 bg-background/80 backdrop-blur-md border-t border-border/50">
+        {/* Quick Prompts */}
         {messages.length === 1 && (
           <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide w-full" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {quickPrompts.map((prompt, idx) => (
               <button 
                 key={idx} 
                 onClick={() => handlePromptClick(prompt)}
-                className="whitespace-nowrap px-3 py-1.5 bg-red-50 text-red-700 border border-red-100 rounded-full text-xs font-medium hover:bg-red-100 hover:border-red-200 transition-colors"
+                className="whitespace-nowrap px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-full text-xs font-semibold hover:bg-primary hover:text-primary-foreground transition-all duration-300"
               >
                 {prompt}
               </button>
@@ -96,11 +97,11 @@ export default function ChatWindow({ onClose }) {
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
             placeholder="Ask RaktBandhan AI..." 
-            className="flex-1 rounded-full bg-gray-50 border-gray-200 focus-visible:ring-red-500 focus-visible:ring-offset-0 px-4"
+            className="flex-1 rounded-full bg-input/50 border-border/50 focus-visible:ring-primary focus-visible:ring-offset-0 px-5 h-12 shadow-inner"
             disabled={isTyping}
           />
-          <Button type="submit" size="icon" disabled={!input.trim() || isTyping} className="h-10 w-10 rounded-full bg-red-600 hover:bg-red-700 text-white shrink-0 shadow-sm transition-transform active:scale-95">
-            <Send className="h-4 w-4 ml-0.5" />
+          <Button type="submit" size="icon" disabled={!input.trim() || isTyping} className="h-12 w-12 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 shadow-md transition-transform active:scale-95">
+            <Send className="h-5 w-5 ml-0.5" />
           </Button>
         </form>
       </div>

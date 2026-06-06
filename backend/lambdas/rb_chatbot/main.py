@@ -9,7 +9,7 @@ import os
 import uuid
 from dotenv import load_dotenv
 
-from schemas import ChatMessageRequest
+from .schemas import ChatMessageRequest
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 

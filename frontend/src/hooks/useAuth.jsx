@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import client from '../api/client';
 
 const AuthContext = createContext(null);
 
@@ -8,75 +9,56 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check local storage for mock session on mount
-    const storedUser = localStorage.getItem('rb_mock_user');
-    if (storedUser) {
+    // Check local storage for session on mount
+    const storedUser = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    if (storedUser && token) {
       setUser(JSON.parse(storedUser));
+      // Optionally fetch /api/auth/me here to verify token
     }
     setIsLoading(false);
   }, []);
 
   const login = async (email, password) => {
     setIsLoading(true);
-    // Mock API call delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    
-    // Check mock DB
-    const users = JSON.parse(localStorage.getItem('rb_mock_db_users') || '[]');
-    const foundUser = users.find(u => u.email === email && u.password === password);
-    
-    if (foundUser) {
-      const authUser = {
-        user_id: foundUser.user_id,
-        name: foundUser.name,
-        email: foundUser.email,
-        role: foundUser.role
-      };
-      setUser(authUser);
-      localStorage.setItem('rb_mock_user', JSON.stringify(authUser));
+    try {
+      const response = await client.post('/api/auth/login', { email, password });
+      if (response.data.success) {
+        const authUser = response.data.data.user;
+        const token = response.data.data.token;
+        setUser(authUser);
+        localStorage.setItem('user', JSON.stringify(authUser));
+        localStorage.setItem('token', token);
+        setIsLoading(false);
+        return { success: true, user: authUser };
+      }
+    } catch (error) {
       setIsLoading(false);
-      return { success: true, user: authUser };
-    } else {
-      setIsLoading(false);
-      return { success: false, error: 'Invalid email or password' };
+      return { success: false, error: error.response?.data?.error || 'Invalid email or password' };
     }
   };
 
   const register = async (userData) => {
     setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    
-    const users = JSON.parse(localStorage.getItem('rb_mock_db_users') || '[]');
-    if (users.find(u => u.email === userData.email)) {
+    try {
+      const response = await client.post('/api/auth/register', userData);
+      if (response.data.success) {
+        // According to API spec, register doesn't return a token, just success. 
+        // We'll log them in directly afterwards, or they can log in.
+        setIsLoading(false);
+        // Let's just automatically log them in since we know their credentials
+        return await login(userData.email, userData.password);
+      }
+    } catch (error) {
       setIsLoading(false);
-      return { success: false, error: 'Email already registered' };
+      return { success: false, error: error.response?.data?.error || 'Registration failed' };
     }
-
-    const newUser = {
-      ...userData,
-      user_id: `u_${Math.random().toString(36).substring(2, 9)}`,
-    };
-    
-    users.push(newUser);
-    localStorage.setItem('rb_mock_db_users', JSON.stringify(users));
-    
-    // Auto login
-    const authUser = {
-      user_id: newUser.user_id,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role
-    };
-    setUser(authUser);
-    localStorage.setItem('rb_mock_user', JSON.stringify(authUser));
-    
-    setIsLoading(false);
-    return { success: true, user: authUser };
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('rb_mock_user');
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
     toast.success('Logged out successfully');
   };
 

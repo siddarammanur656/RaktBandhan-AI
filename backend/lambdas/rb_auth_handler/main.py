@@ -10,7 +10,7 @@ import boto3
 from dotenv import load_dotenv
 import logging
 
-from schemas import RegisterRequest, LoginRequest
+from .schemas import RegisterRequest, LoginRequest
 
 # Load environment variables (useful for local testing)
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))

@@ -10,26 +10,35 @@ export default function DonorDashboard() {
   const { requests, history, score, tier, acceptRequest, declineRequest } = useDonorData();
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name.split(' ')[0]} 👋</h1>
-        <p className="text-gray-500 mt-1">Here is your donor summary for today.</p>
+    <div className="space-y-8 pb-12">
+      <div className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+        <h1 className="text-4xl font-extrabold text-foreground tracking-tight">
+          Welcome back, <span className="text-gradient">{user?.name.split(' ')[0]}</span> 👋
+        </h1>
+        <p className="text-muted-foreground mt-2 text-lg">Your heroic impact dashboard.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ReliabilityScoreCard score={score} tier={tier} />
-        <NextEligibleDate />
+        <div className="animate-fade-in-up hover:-translate-y-1 transition-transform duration-300" style={{ animationDelay: '0.2s' }}>
+          <ReliabilityScoreCard score={score} tier={tier} />
+        </div>
+        <div className="animate-fade-in-up hover:-translate-y-1 transition-transform duration-300" style={{ animationDelay: '0.3s' }}>
+          <NextEligibleDate />
+        </div>
       </div>
 
-      <PendingRequests 
-        requests={requests} 
-        onAccept={acceptRequest} 
-        onDecline={declineRequest} 
-      />
+      <div className="animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+        <PendingRequests 
+          requests={requests} 
+          onAccept={acceptRequest} 
+          onDecline={declineRequest} 
+        />
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <DonationHistory history={history} />
-        {/* Placeholder for future features like Chatbot trigger or AI insights */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+        <div className="hover:-translate-y-1 transition-transform duration-300">
+          <DonationHistory history={history} />
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 import os
 
-from schemas import OutreachRequest
+from .schemas import OutreachRequest
 
 app = FastAPI(title="RaktBandhan AI - Outreach Handler (Local Mock)")
 

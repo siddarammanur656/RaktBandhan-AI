@@ -1,46 +1,87 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import client from '../api/client';
+import { toast } from 'sonner';
 
 export function useAdminData() {
-  const [kpis] = useState({
-    totalRequests: 142,
-    autoFulfilled: 68,
-    activeDonors: 1205,
-    escalations: 3
+  const [kpis, setKpis] = useState({
+    totalRequests: 0,
+    autoFulfilled: 0,
+    activeDonors: 0,
+    escalations: 0
   });
 
-  const [activeRequests] = useState([
-    { id: 'REQ-001', patient: 'Aarav Sharma', bloodGroup: 'B+', hospital: 'Apollo Hospitals', status: 'Matching', urgency: 'High', date: '2026-06-06' },
-    { id: 'REQ-002', patient: 'Kiara Singh', bloodGroup: 'O-', hospital: 'KIMS', status: 'Confirmed', urgency: 'Medium', date: '2026-06-06' },
-    { id: 'REQ-003', patient: 'Rohan Verma', bloodGroup: 'A+', hospital: 'Care Hospital', status: 'Failed', urgency: 'High', date: '2026-06-05' },
-    { id: 'REQ-004', patient: 'Priya Das', bloodGroup: 'AB+', hospital: 'Yashoda Hospitals', status: 'Completed', urgency: 'Low', date: '2026-06-05' }
-  ]);
+  const [activeRequests, setActiveRequests] = useState([]);
+  const [donors, setDonors] = useState([]);
+  const [insights, setInsights] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [donors] = useState([
-    { id: 'D-001', name: 'Rahul Kumar', bloodGroup: 'B+', tier: 'Gold', score: 92, lastDonation: '2026-04-10' },
-    { id: 'D-002', name: 'Sneha Patel', bloodGroup: 'O-', tier: 'Silver', score: 75, lastDonation: '2025-12-05' },
-    { id: 'D-003', name: 'Amit Singh', bloodGroup: 'A+', tier: 'Bronze', score: 45, lastDonation: '2026-01-20' },
-    { id: 'D-004', name: 'Neha Gupta', bloodGroup: 'AB+', tier: 'Gold', score: 98, lastDonation: '2026-05-15' }
-  ]);
+  const fetchData = useCallback(async () => {
+    try {
+      // Fetch Dashboard Stats
+      const dashboardRes = await client.get('/api/admin/dashboard');
+      if (dashboardRes.data.success) {
+        const { today_stats, donor_stats, ai_insights, donors: backendDonors } = dashboardRes.data.data;
+        setKpis({
+          totalRequests: today_stats.total_requests || 0,
+          autoFulfilled: today_stats.auto_fulfilled || 0,
+          activeDonors: donor_stats.active_donors || 0,
+          escalations: today_stats.escalations || 0
+        });
+        
+        setInsights(ai_insights.map((text, idx) => ({
+          id: idx,
+          text,
+          action: "Review"
+        })));
+        
+        if (backendDonors) {
+          setDonors(backendDonors);
+        }
+      }
 
-  const [insights] = useState([
-    { id: 1, text: "3 requests failed in Madhapur due to no B- donors. Recommend targeted outreach campaign.", action: "Start Campaign" },
-    { id: 2, text: "Donor retention dropped by 4% this week. Consider sending personalized thank you notes.", action: "View Report" }
-  ]);
+      // Fetch Active Requests
+      const reqRes = await client.get('/api/requests?limit=10');
+      if (reqRes.data.success) {
+        setActiveRequests(reqRes.data.data.requests.map(r => ({
+          id: r.request_id,
+          patient: r.patient_name,
+          bloodGroup: r.blood_group,
+          hospital: r.city,
+          status: r.status,
+          urgency: 'Normal', // Default if not provided
+          date: r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : 'Unknown'
+        })));
+      }
+    } catch (error) {
+      console.error("Failed to fetch admin data", error);
+      toast.error('Could not load admin dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const askCoPilot = async (query) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          text: "Based on the latest data, the Madhapur region currently has the lowest auto-fulfillment rate (32%). There are 14 pending requests and only 2 active B- donors in a 5km radius.",
-          data: [
-            { region: 'Madhapur', rate: '32%', pending: 14 },
-            { region: 'Gachibowli', rate: '45%', pending: 8 },
-            { region: 'Jubilee Hills', rate: '68%', pending: 3 }
-          ]
-        });
-      }, 1500);
-    });
+    try {
+      const response = await client.post('/api/admin/copilot', { query });
+      if (response.data.success) {
+        return {
+          text: response.data.data.query_interpretation + " " + (response.data.data.suggested_followup || ""),
+          data: response.data.data.results.map(r => ({
+            region: r.name || 'Unknown',
+            rate: r.reason_inactive || 'N/A',
+            pending: r.suggested_action || 'N/A'
+          }))
+        };
+      }
+    } catch (error) {
+      toast.error("Co-Pilot is currently offline or returning an error.");
+      return null;
+    }
   };
 
-  return { kpis, activeRequests, donors, insights, askCoPilot };
+  return { kpis, activeRequests, donors, insights, loading, askCoPilot };
 }
