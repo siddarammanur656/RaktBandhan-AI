@@ -40,6 +40,7 @@ export default function Register() {
       toast.success('Registration successful!');
       if (res.user.role === 'patient') navigate('/patient/dashboard');
       else if (res.user.role === 'donor') navigate('/donor/dashboard');
+      else if (res.user.role === 'hospital') navigate('/hospital/dashboard');
       else if (res.user.role === 'admin') navigate('/admin/dashboard');
       else navigate('/');
     } else {
@@ -82,6 +83,7 @@ export default function Register() {
                 <SelectContent>
                   <SelectItem value="donor">Blood Donor</SelectItem>
                   <SelectItem value="patient">Thalassemia Patient</SelectItem>
+                  <SelectItem value="hospital">Hospital / Blood Bank</SelectItem>
                   <SelectItem value="admin">Blood Warriors Admin</SelectItem>
                 </SelectContent>
               </Select>

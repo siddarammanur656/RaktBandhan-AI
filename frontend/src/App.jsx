@@ -7,10 +7,12 @@ import ThankYou from './pages/ThankYou';
 import { AuthProvider } from './hooks/useAuth';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 
-// Donor Portal
 import DonorDashboard from './pages/DonorDashboard';
 import DonorProfile from './pages/DonorProfile';
 import DonorTransfusionAction from './pages/DonorTransfusionAction';
+
+// Hospital Portal
+import HospitalDashboard from './pages/HospitalDashboard';
 
 // Patient Portal
 import PatientDashboard from './pages/PatientDashboard';
@@ -42,6 +44,11 @@ function App() {
             
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
               <Route path="admin/dashboard" element={<AdminDashboard />} />
+            </Route>
+
+            {/* Hospital Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['hospital']} />}>
+              <Route path="hospital/dashboard" element={<HospitalDashboard />} />
             </Route>
           </Route>
         </Routes>

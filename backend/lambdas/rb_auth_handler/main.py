@@ -91,7 +91,7 @@ def register(request: RegisterRequest):
         raise HTTPException(status_code=400, detail={"success": False, "error": "Email already registered", "code": "EMAIL_EXISTS"})
 
     # Create new user
-    prefix = "p_" if request.role == "patient" else ("a_" if request.role == "admin" else "u_")
+    prefix = "p_" if request.role == "patient" else ("a_" if request.role == "admin" else ("h_" if request.role == "hospital" else "u_"))
     user_id = f"{prefix}{uuid.uuid4().hex[:8]}"
     
     new_user = {

@@ -1,9 +1,38 @@
+import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { MoreHorizontal, Trash2, Ban } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import client from '@/api/client';
 
-export default function DonorPoolAnalytics({ donors }) {
+export default function DonorPoolAnalytics({ donors: initialDonors }) {
+  const [donors, setDonors] = useState(initialDonors);
+
+  const handleDeactivate = async (donorId) => {
+    if (!window.confirm("Are you sure you want to deactivate this donor?")) return;
+    try {
+      await client.post(`/api/admin/users/${donorId}/deactivate`);
+      toast.success("Donor deactivated successfully");
+      // Could re-fetch, but for now we'll just optimistically update the UI or let them refresh
+    } catch (err) {
+      toast.error("Failed to deactivate donor");
+    }
+  };
+
+  const handleDelete = async (donorId) => {
+    if (!window.confirm("CRITICAL: Are you sure you want to permanently delete this donor?")) return;
+    try {
+      await client.delete(`/api/admin/users/${donorId}`);
+      toast.success("Donor deleted successfully");
+      setDonors(donors.filter(d => d.id !== donorId));
+    } catch (err) {
+      toast.error("Failed to delete donor");
+    }
+  };
   const bloodGroups = donors.reduce((acc, donor) => {
     acc[donor.bloodGroup] = (acc[donor.bloodGroup] || 0) + 1;
     return acc;
@@ -40,6 +69,7 @@ export default function DonorPoolAnalytics({ donors }) {
               <TableHead>Blood Group</TableHead>
               <TableHead>Reliability Score</TableHead>
               <TableHead>Tier</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -57,6 +87,23 @@ export default function DonorPoolAnalytics({ donors }) {
                   }>
                     {donor.tier}
                   </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleDeactivate(donor.id)} className="text-amber-600">
+                        <Ban className="mr-2 h-4 w-4" /> Deactivate
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDelete(donor.id)} className="text-red-600 focus:text-red-600">
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete Permanently
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}

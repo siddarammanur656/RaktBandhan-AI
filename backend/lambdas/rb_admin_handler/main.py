@@ -126,5 +126,28 @@ def get_dashboard(current_admin: dict = Depends(get_current_admin)):
         }
     }
 
+@app.post("/api/admin/users/{user_id}/deactivate")
+def deactivate_user(user_id: str, current_admin: dict = Depends(get_current_admin)):
+    response = users_table.get_item(Key={"user_id": user_id})
+    if not response.get("Item"):
+        raise HTTPException(status_code=404, detail={"success": False, "error": "User not found"})
+        
+    users_table.update_item(
+        Key={"user_id": user_id},
+        UpdateExpression="SET #s = :s",
+        ExpressionAttributeNames={"#s": "status"},
+        ExpressionAttributeValues={":s": "inactive"}
+    )
+    return {"success": True, "message": f"User {user_id} deactivated successfully."}
+
+@app.delete("/api/admin/users/{user_id}")
+def delete_user(user_id: str, current_admin: dict = Depends(get_current_admin)):
+    response = users_table.get_item(Key={"user_id": user_id})
+    if not response.get("Item"):
+        raise HTTPException(status_code=404, detail={"success": False, "error": "User not found"})
+        
+    users_table.delete_item(Key={"user_id": user_id})
+    return {"success": True, "message": f"User {user_id} deleted successfully."}
+
 # Lambda handler
 handler = Mangum(app)
