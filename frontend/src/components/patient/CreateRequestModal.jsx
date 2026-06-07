@@ -31,25 +31,25 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, bloodGro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-card w-full max-w-md rounded-2xl shadow-xl overflow-hidden border border-border/50 animate-fade-in-up">
-        <div className="bg-gradient-to-r from-red-600 to-rose-500 p-6 flex justify-between items-center text-white">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Droplet className="h-5 w-5 fill-white/20" />
+      <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-[#E4E4E7] animate-fade-in-up">
+        <div className="bg-brand-50 p-6 flex justify-between items-center border-b border-[#E4E4E7]">
+          <h2 className="text-xl font-bold flex items-center gap-2 text-brand-600">
+            <Droplet className="h-5 w-5 fill-brand-600" />
             Request Blood
           </h2>
-          <button onClick={onClose} className="hover:bg-white/20 p-1.5 rounded-full transition-colors">
+          <button onClick={onClose} className="hover:bg-brand-100 p-1.5 rounded-full transition-colors text-brand-600">
             <X className="h-5 w-5" />
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 bg-white">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground/80 flex items-center gap-1.5">
-                <Droplet className="h-4 w-4 text-red-500" /> Blood Group
+              <label className="text-sm font-semibold text-[#52525B] flex items-center gap-1.5">
+                <Droplet className="h-4 w-4 text-brand-500" /> Blood Group
               </label>
               <select 
-                className="w-full h-11 px-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                className="w-full h-11 px-3 rounded-lg border border-[#E4E4E7] bg-white focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all outline-none text-[#09090B]"
                 value={formData.blood_group}
                 onChange={e => setFormData({...formData, blood_group: e.target.value})}
               >
@@ -59,46 +59,46 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, bloodGro
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground/80">Units Required</label>
+              <label className="text-sm font-semibold text-[#52525B]">Units Required</label>
               <Input 
                 type="number" min="1" max="5" 
                 value={formData.quantity_units}
                 onChange={e => setFormData({...formData, quantity_units: parseInt(e.target.value)})}
-                className="h-11"
+                className="h-11 bg-white border-[#E4E4E7] text-[#09090B] focus-visible:ring-brand-500"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground/80 flex items-center gap-1.5">
-              <Calendar className="h-4 w-4 text-primary" /> Required By Date
+            <label className="text-sm font-semibold text-[#52525B] flex items-center gap-1.5">
+              <Calendar className="h-4 w-4 text-brand-500" /> Required By Date
             </label>
             <Input 
               type="date" required
               value={formData.required_by_date}
               onChange={e => setFormData({...formData, required_by_date: e.target.value})}
-              className="h-11"
+              className="h-11 bg-white border-[#E4E4E7] text-[#09090B] focus-visible:ring-brand-500"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground/80 flex items-center gap-1.5">
-              <MapPin className="h-4 w-4 text-primary" /> Hospital/Location
+            <label className="text-sm font-semibold text-[#52525B] flex items-center gap-1.5">
+              <MapPin className="h-4 w-4 text-brand-500" /> Hospital/Location
             </label>
             <Input 
               placeholder="e.g. Apollo Hospital, Jubilee Hills, Hyderabad" required
               value={formData.address_text}
               onChange={e => setFormData({...formData, address_text: e.target.value})}
-              className="h-11"
+              className="h-11 bg-white border-[#E4E4E7] text-[#09090B] focus-visible:ring-brand-500"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground/80 flex items-center gap-1.5">
+            <label className="text-sm font-semibold text-[#52525B] flex items-center gap-1.5">
               <AlertCircle className="h-4 w-4 text-amber-500" /> Urgency Level
             </label>
             <select 
-              className="w-full h-11 px-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              className="w-full h-11 px-3 rounded-lg border border-[#E4E4E7] bg-white focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all outline-none text-[#09090B]"
               value={formData.urgency}
               onChange={e => setFormData({...formData, urgency: e.target.value})}
             >
@@ -108,12 +108,12 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, bloodGro
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground/80">Additional Notes</label>
+            <label className="text-sm font-semibold text-[#52525B]">Additional Notes</label>
             <Input 
               placeholder="Any specific instructions..." 
               value={formData.notes}
               onChange={e => setFormData({...formData, notes: e.target.value})}
-              className="h-11"
+              className="h-11 bg-white border-[#E4E4E7] text-[#09090B] focus-visible:ring-brand-500"
             />
           </div>
 
@@ -121,7 +121,7 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, bloodGro
             <Button 
               type="submit" 
               disabled={isSubmitting}
-              className="w-full h-12 text-md font-bold"
+              className="w-full h-12 text-md font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-brand"
             >
               {isSubmitting ? (
                 <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Triggering AI Matching...</>

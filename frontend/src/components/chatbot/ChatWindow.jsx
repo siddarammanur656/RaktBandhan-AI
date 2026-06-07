@@ -53,15 +53,15 @@ export default function ChatWindow({ onClose }) {
   };
 
   return (
-    <div className="fixed bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[400px] h-[550px] max-h-[80vh] glass-card rounded-3xl flex flex-col z-50 overflow-hidden animate-fade-in-up">
+    <div className="fixed bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[400px] h-[550px] max-h-[80vh] bg-white border border-border shadow-2xl rounded-2xl flex flex-col z-50 overflow-hidden animate-fade-in-up">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary to-rose-500 text-primary-foreground p-5 flex justify-between items-center shadow-md z-10">
+      <div className="bg-brand-gradient text-white p-5 flex justify-between items-center shadow-sm z-10">
         <div>
-          <h3 className="font-extrabold flex items-center gap-2 text-lg">
+          <h3 className="font-display font-bold flex items-center gap-2 text-lg tracking-tight">
             <HeartPulse className="h-5 w-5 animate-pulse-slow" />
-            RaktBandhan AI
+            AI Assistant
           </h3>
-          <p className="text-xs text-primary-foreground/80 flex items-center gap-1.5 mt-1 font-medium">
+          <p className="text-xs text-white/80 flex items-center gap-1.5 mt-1 font-medium">
             <span className="h-2 w-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(7ade80,0.8)]"></span> Online
           </p>
         </div>
@@ -73,7 +73,7 @@ export default function ChatWindow({ onClose }) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 p-5 overflow-y-auto bg-background/50 flex flex-col" ref={scrollRef}>
+      <div className="flex-1 p-5 overflow-y-auto bg-[#FAFAFA] flex flex-col" ref={scrollRef}>
         {messages.map((msg) => (
           <ChatMessage key={msg.id} message={msg} />
         ))}
@@ -86,15 +86,15 @@ export default function ChatWindow({ onClose }) {
                 <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
               </span>
             </div>
-            <div className="p-3 bg-muted rounded-2xl rounded-bl-none shadow-sm border border-border/50">
-              <p className="text-sm text-muted-foreground italic font-medium">Claude is thinking...</p>
+            <div className="p-3 bg-brand-gradient rounded-2xl rounded-bl-none shadow-sm text-white">
+              <p className="text-sm italic font-medium">AI is thinking...</p>
             </div>
           </div>
         )}
       </div>
 
       {/* Input Area */}
-      <div className="p-4 bg-background/80 backdrop-blur-md border-t border-border/50">
+      <div className="p-4 bg-white border-t border-border">
         {/* Quick Prompts */}
         {messages.length === 1 && (
           <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide w-full" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -102,7 +102,7 @@ export default function ChatWindow({ onClose }) {
               <button 
                 key={idx} 
                 onClick={() => handlePromptClick(prompt)}
-                className="whitespace-nowrap px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-full text-xs font-semibold hover:bg-primary hover:text-primary-foreground transition-all duration-300"
+                className="whitespace-nowrap px-4 py-2 bg-[#F4F4F5] text-[#52525B] border border-[#E4E4E7] rounded-full text-xs font-semibold hover:bg-[#E4E4E7] transition-all duration-300"
               >
                 {prompt}
               </button>
@@ -114,11 +114,11 @@ export default function ChatWindow({ onClose }) {
           <Input 
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
-            placeholder="Ask RaktBandhan AI..." 
-            className="flex-1 rounded-full bg-input/50 border-border/50 focus-visible:ring-primary focus-visible:ring-offset-0 px-5 h-12 shadow-inner"
+            placeholder="Ask AI Assistant..." 
+            className="flex-1 rounded-full bg-[#FAFAFA] border-[#E4E4E7] focus-visible:ring-brand-500 focus-visible:ring-offset-0 px-5 h-11"
             disabled={isTyping}
           />
-          <Button type="submit" size="icon" disabled={!input.trim() || isTyping} className="h-12 w-12 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 shadow-md transition-transform active:scale-95">
+          <Button type="submit" size="icon" disabled={!input.trim() || isTyping} className="h-11 w-11 rounded-full bg-brand-gradient hover:opacity-90 text-white shrink-0 shadow-sm transition-transform active:scale-95">
             <Send className="h-5 w-5 ml-0.5" />
           </Button>
         </form>

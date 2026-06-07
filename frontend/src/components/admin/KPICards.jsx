@@ -12,15 +12,15 @@ export default function KPICards({ kpis }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       {cards.map((c, i) => (
-        <Card key={i} className={`p-6 flex flex-col gap-4 glass-card border-l-4 ${c.border} rounded-2xl`}>
+        <Card key={i} className="p-6 flex flex-col gap-4 border-border bg-white shadow-sm rounded-2xl transition-all duration-300 hover:shadow-md">
           <div className="flex justify-between items-start w-full">
-            <div className={`p-3.5 rounded-2xl ${c.bg} ${c.color} shadow-sm border border-white/20 dark:border-white/5`}>
-              <c.icon className="h-7 w-7" />
+            <h3 className="text-sm font-medium text-[#71717A] tracking-wide">{c.title}</h3>
+            <div className={`p-2 rounded-xl ${c.bg} ${c.color} shadow-sm border border-white/20`}>
+              <c.icon className="h-5 w-5" />
             </div>
           </div>
           <div>
-            <p className="text-4xl font-extrabold text-foreground tracking-tight">{c.value}</p>
-            <p className="text-sm text-muted-foreground font-semibold uppercase tracking-wider mt-2">{c.title}</p>
+            <p className="font-display text-4xl font-bold tracking-tight text-[#09090B]">{c.value}</p>
           </div>
         </Card>
       ))}

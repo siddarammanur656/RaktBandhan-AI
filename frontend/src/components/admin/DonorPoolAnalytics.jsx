@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { MoreHorizontal, Trash2, Ban } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import client from '@/api/client';
@@ -47,7 +47,7 @@ export default function DonorPoolAnalytics({ donors: initialDonors }) {
     <div className="space-y-6">
       <Card className="p-6 border border-gray-200">
         <h3 className="text-xl font-semibold mb-6 text-gray-900">Blood Group Distribution</h3>
-        <div className="h-[300px] w-full">
+        <div className="w-full" style={{ height: 300, minHeight: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280' }} />
@@ -64,7 +64,6 @@ export default function DonorPoolAnalytics({ donors: initialDonors }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Donor ID</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Blood Group</TableHead>
               <TableHead>Reliability Score</TableHead>
@@ -75,7 +74,6 @@ export default function DonorPoolAnalytics({ donors: initialDonors }) {
           <TableBody>
             {donors.map((donor) => (
               <TableRow key={donor.id}>
-                <TableCell className="font-medium text-gray-500">{donor.id}</TableCell>
                 <TableCell className="font-semibold text-gray-900">{donor.name}</TableCell>
                 <TableCell className="font-bold text-red-600">{donor.bloodGroup}</TableCell>
                 <TableCell>{donor.score}/100</TableCell>
@@ -89,21 +87,14 @@ export default function DonorPoolAnalytics({ donors: initialDonors }) {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleDeactivate(donor.id)} className="text-amber-600">
-                        <Ban className="mr-2 h-4 w-4" /> Deactivate
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(donor.id)} className="text-red-600 focus:text-red-600">
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete Permanently
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleDeactivate(donor.id)} className="text-amber-600 hover:text-amber-700 hover:bg-amber-50">
+                      <Ban className="mr-1 h-3.5 w-3.5" /> Deactivate
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleDelete(donor.id)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                      <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

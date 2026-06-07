@@ -17,9 +17,9 @@ export default function ChatbotWidget() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 h-14 w-14 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 hover:shadow-xl z-50 focus:outline-none focus:ring-4 focus:ring-red-300"
+          className="fixed bottom-6 right-6 h-14 w-14 bg-brand-gradient text-white rounded-full shadow-brand flex items-center justify-center transition-all duration-300 hover:scale-105 hover:shadow-lg z-50 focus:outline-none animate-pulse-slow group"
         >
-          <MessageSquareText className="h-6 w-6" />
+          <MessageSquareText className="h-6 w-6 group-hover:scale-110 transition-transform" />
         </button>
       )}
     </>

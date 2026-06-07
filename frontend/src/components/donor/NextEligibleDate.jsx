@@ -1,4 +1,4 @@
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Calendar } from 'lucide-react';
 
 export default function NextEligibleDate() {
@@ -7,19 +7,21 @@ export default function NextEligibleDate() {
   eligibleDate.setDate(eligibleDate.getDate() + daysRemaining);
 
   return (
-    <Card className="p-6 bg-blue-50 border-blue-100 h-full flex items-center">
-      <div className="flex items-center gap-5">
-        <div className="p-4 bg-blue-100 rounded-full text-blue-600">
-          <Calendar className="h-8 w-8" />
+    <Card className="h-full flex flex-col justify-center">
+      <CardContent className="p-6">
+        <div className="flex items-center gap-5">
+          <div className="p-3.5 bg-brand-50 rounded-xl text-brand-600 shadow-sm border border-brand-100">
+            <Calendar className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-[#71717A]">Next Eligible Date</h3>
+            <p className="font-display text-3xl font-bold text-[#09090B] mt-1 tracking-tight">
+              {eligibleDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </p>
+            <p className="text-sm text-brand-600 mt-1 font-medium bg-brand-50 w-fit px-2 py-0.5 rounded-md">In {daysRemaining} days</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-sm font-medium text-blue-800 uppercase tracking-wide">Next Eligible Date</h3>
-          <p className="text-2xl font-bold text-blue-900 mt-1">
-            {eligibleDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-          </p>
-          <p className="text-sm text-blue-600 mt-1 font-medium">In {daysRemaining} days</p>
-        </div>
-      </div>
+      </CardContent>
     </Card>
   );
 }

@@ -7,22 +7,22 @@ export default function ChatMessage({ message }) {
   return (
     <div className={`flex w-full mt-4 space-x-3 max-w-[85%] animate-fade-in-up ${isBot ? 'mr-auto' : 'ml-auto justify-end'}`}>
       {isBot && (
-        <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mt-auto mb-1 shadow-sm">
-          <HeartPulse className="h-4 w-4 text-primary" />
+        <div className="flex-shrink-0 h-8 w-8 rounded-full bg-brand-gradient flex items-center justify-center mt-auto mb-1 shadow-sm">
+          <HeartPulse className="h-4 w-4 text-white" />
         </div>
       )}
       
       <div>
-        <div className={`p-3.5 rounded-2xl shadow-sm border ${
+        <div className={`p-3.5 rounded-2xl shadow-sm ${
           isBot 
-            ? 'bg-card text-card-foreground rounded-bl-none border-border/50' 
-            : 'bg-gradient-to-r from-primary to-rose-500 text-primary-foreground rounded-br-none border-transparent'
+            ? 'bg-brand-gradient text-white rounded-bl-none' 
+            : 'bg-[#F4F4F5] text-[#09090B] rounded-br-none border border-[#E4E4E7]'
         }`}>
           {isBot ? (
-            <div className="text-sm font-medium leading-relaxed max-w-none text-card-foreground">
+            <div className="text-sm font-medium leading-relaxed max-w-none text-white">
               <ReactMarkdown 
                 components={{
-                  strong: ({node, ...props}) => <span className="font-bold text-foreground" {...props} />,
+                  strong: ({node, ...props}) => <span className="font-bold text-white" {...props} />,
                   ul: ({node, ...props}) => <ul className="list-disc pl-5 my-2 space-y-1" {...props} />,
                   ol: ({node, ...props}) => <ol className="list-decimal pl-5 my-2 space-y-1" {...props} />,
                   li: ({node, ...props}) => <li className="pl-1" {...props} />,

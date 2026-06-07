@@ -1,6 +1,7 @@
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import NumberFlow from '@number-flow/react';
 
 export default function ReliabilityScoreCard({ score, tier }) {
   const tierStyles = {
@@ -10,20 +11,27 @@ export default function ReliabilityScoreCard({ score, tier }) {
   };
 
   return (
-    <Card className="p-6 border border-gray-200">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="text-xl font-semibold text-gray-900">Reliability Score</h3>
-          <p className="text-gray-500 text-sm mt-1">Based on your donation consistency</p>
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h3 className="text-sm font-medium text-[#71717A]">Reliability Score</h3>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="font-display text-4xl font-bold tracking-tight text-[#09090B]">
+                <NumberFlow value={score || 0} />
+              </span>
+              <span className="text-[#A1A1AA] font-medium">/100</span>
+            </div>
+            <p className="text-[#71717A] text-xs mt-2">Based on your donation consistency</p>
+          </div>
+          <Badge className={`${tierStyles[tier] || tierStyles.Bronze} border-0 shadow-sm`}>
+            🏆 {tier} Donor
+          </Badge>
         </div>
-        <Badge className={`${tierStyles[tier] || tierStyles.Bronze} px-3 py-1 text-sm rounded-full`}>
-          🏆 {tier} Donor
-        </Badge>
-      </div>
-      <div className="flex items-center gap-4 mt-6">
-        <Progress value={score} className="h-3 flex-1 bg-gray-100" />
-        <span className="font-bold text-lg text-gray-800">{score}/100</span>
-      </div>
+        <div className="flex items-center gap-4">
+          <Progress value={score} className="h-2 flex-1 bg-[#F4F4F5] [&>div]:bg-brand-500" />
+        </div>
+      </CardContent>
     </Card>
   );
 }

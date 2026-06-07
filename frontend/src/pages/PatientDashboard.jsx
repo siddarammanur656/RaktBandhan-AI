@@ -10,10 +10,13 @@ import AssignedDonorCard from '@/components/patient/AssignedDonorCard';
 import UpcomingSchedule from '@/components/patient/UpcomingSchedule';
 import TransfusionHistory from '@/components/patient/TransfusionHistory';
 import CreateRequestModal from '@/components/patient/CreateRequestModal';
+import DashboardSkeleton from '@/components/layout/DashboardSkeleton';
+import ProfileSettingsTab from '@/components/layout/ProfileSettingsTab';
+import { UserCircle } from 'lucide-react';
 
 export default function PatientDashboard() {
   const { user } = useAuth();
-  const { nextTransfusion, assignedDonor, schedule, history, createRequest } = usePatientData();
+  const { nextTransfusion, assignedDonor, schedule, history, createRequest, loading } = usePatientData();
   const [activeTab, setActiveTab] = useState('overview');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -29,74 +32,85 @@ export default function PatientDashboard() {
     { id: 'schedule', name: 'Schedule', icon: Clock },
     { id: 'donors', name: 'Donors', icon: Users },
     { id: 'history', name: 'History', icon: History },
+    { id: 'profile', name: 'Profile Settings', icon: UserCircle },
   ];
 
   return (
     <DashboardLayout title="Patient Portal" navigation={navigation} activeTab={activeTab} setActiveTab={setActiveTab}>
-      {activeTab === 'overview' && (
-        <div className="space-y-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
-            <h1 className="text-4xl font-extrabold text-foreground tracking-tight">
-              Hello, <span className="text-gradient">{user?.name?.split(' ')[0] || 'User'}</span> 👋
-            </h1>
-            <Button onClick={() => setIsModalOpen(true)} className="bg-red-600 hover:bg-red-700 text-white shadow-lg flex items-center gap-2 px-6 h-12 text-md font-semibold">
-              <PlusCircle className="h-5 w-5" /> Request Blood
-            </Button>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
-              <div className="hover:-translate-y-1 transition-transform duration-300">
-                <NextTransfusionCard data={nextTransfusion} />
+      {loading ? (
+        <DashboardSkeleton />
+      ) : (
+        <>
+          {activeTab === 'overview' && (
+            <div className="space-y-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
+                <h1 className="font-display text-3xl font-bold tracking-tight text-[#09090B]">
+                  Hello, <span className="text-brand-600">{user?.name?.split(' ')[0] || 'User'}</span> 👋
+                </h1>
+                <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
+                  <PlusCircle className="h-5 w-5" /> Request Blood
+                </Button>
               </div>
-              <div className="hover:-translate-y-1 transition-transform duration-300">
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-8">
+                  <div>
+                    <NextTransfusionCard data={nextTransfusion} />
+                  </div>
+                  <div>
+                    <AssignedDonorCard donor={assignedDonor} />
+                  </div>
+                </div>
+
+                <div className="lg:col-span-1 space-y-8">
+                  <div>
+                    <UpcomingSchedule schedule={schedule} />
+                  </div>
+                  <div>
+                    <TransfusionHistory history={history} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'schedule' && (
+            <div className="space-y-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              <div className="flex justify-between items-center mb-8">
+                <h1 className="font-display text-3xl font-bold tracking-tight text-[#09090B]">Schedule</h1>
+              </div>
+              <div>
+                <UpcomingSchedule schedule={schedule} />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'donors' && (
+            <div className="space-y-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              <div className="flex justify-between items-center mb-8">
+                <h1 className="font-display text-3xl font-bold tracking-tight text-[#09090B]">Assigned Donors</h1>
+              </div>
+              <div>
                 <AssignedDonorCard donor={assignedDonor} />
               </div>
             </div>
+          )}
 
-            <div className="lg:col-span-1 space-y-8">
-              <div className="hover:-translate-y-1 transition-transform duration-300">
-                <UpcomingSchedule schedule={schedule} />
+          {activeTab === 'history' && (
+            <div className="space-y-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              <div className="flex justify-between items-center mb-8">
+                <h1 className="font-display text-3xl font-bold tracking-tight text-[#09090B]">Transfusion History</h1>
               </div>
-              <div className="hover:-translate-y-1 transition-transform duration-300">
+              <div>
                 <TransfusionHistory history={history} />
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {activeTab === 'schedule' && (
-        <div className="space-y-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-extrabold text-foreground tracking-tight">Schedule</h1>
-          </div>
-          <div className="hover:-translate-y-1 transition-transform duration-300">
-            <UpcomingSchedule schedule={schedule} />
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'donors' && (
-        <div className="space-y-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-extrabold text-foreground tracking-tight">Assigned Donors</h1>
-          </div>
-          <div className="hover:-translate-y-1 transition-transform duration-300">
-            <AssignedDonorCard donor={assignedDonor} />
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'history' && (
-        <div className="space-y-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-extrabold text-foreground tracking-tight">Transfusion History</h1>
-          </div>
-          <div className="hover:-translate-y-1 transition-transform duration-300">
-            <TransfusionHistory history={history} />
-          </div>
-        </div>
+          {activeTab === 'profile' && (
+            <ProfileSettingsTab />
+          )}
+        </>
       )}
 
       <CreateRequestModal 
