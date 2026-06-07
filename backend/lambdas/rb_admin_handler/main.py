@@ -89,6 +89,24 @@ def get_dashboard(current_admin: dict = Depends(get_current_admin)):
     
     fulfillment_rate = round((fulfilled / total_reqs * 100), 1) if total_reqs > 0 else 0.0
 
+    dynamic_insights = []
+    
+    if total_reqs == 0:
+        dynamic_insights.append("System idle: No active requests currently in the system.")
+    elif fulfillment_rate < 50.0:
+        dynamic_insights.append(f"Action needed: Current auto-fulfillment rate is low at {fulfillment_rate}%. Review escalated requests.")
+    else:
+        dynamic_insights.append(f"System healthy: Auto-fulfillment rate is strong at {fulfillment_rate}%.")
+        
+    if blood_groups:
+        most_common = max(blood_groups, key=blood_groups.get)
+        dynamic_insights.append(f"Inventory insight: {most_common} is currently the most registered blood group among donors.")
+    else:
+        dynamic_insights.append("Inventory check: No active donors found in the database.")
+        
+    if escalations > 0:
+        dynamic_insights.append(f"Attention: There are {escalations} escalated requests requiring immediate manual intervention.")
+
     return {
         "success": True,
         "data": {
@@ -119,10 +137,7 @@ def get_dashboard(current_admin: dict = Depends(get_current_admin)):
                 } for d in users if d.get("role") == "donor"
             ][:10],
             "recent_escalations": [],
-            "ai_insights": [
-                "Local Mock: Request fulfillment rate is looking good.",
-                "Local Mock: High demand for O Negative blood in Hyderabad."
-            ]
+            "ai_insights": dynamic_insights
         }
     }
 

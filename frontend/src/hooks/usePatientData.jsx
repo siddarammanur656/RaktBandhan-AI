@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 export function usePatientData() {
   const [nextTransfusion, setNextTransfusion] = useState(null);
   const [assignedDonor, setAssignedDonor] = useState(null);
+  const [activeRequests, setActiveRequests] = useState([]);
   const [schedule, setSchedule] = useState([]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,16 @@ export function usePatientData() {
             id: idx,
             date: new Date(s.date),
             status: s.status
+          })));
+        }
+        
+        if (data.active_requests) {
+          setActiveRequests(data.active_requests.map((r) => ({
+            id: r.request_id,
+            bloodGroup: r.blood_group,
+            status: r.status,
+            date: r.created_at ? new Date(r.created_at) : new Date(),
+            units: r.quantity_units
           })));
         }
         
@@ -80,6 +91,7 @@ export function usePatientData() {
   return {
     nextTransfusion,
     assignedDonor,
+    activeRequests,
     schedule,
     history,
     loading,

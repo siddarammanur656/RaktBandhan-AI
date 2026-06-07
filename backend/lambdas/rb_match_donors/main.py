@@ -39,13 +39,7 @@ def get_ml_prediction(donor_features: dict) -> float:
         # In a real scenario, convert dict to CSV or JSON as expected by XGBoost
         payload = json.dumps([donor_features])
         
-        # Mocking for local/hackathon without actual endpoint
-        if SAGEMAKER_ENDPOINT_NAME == "raktbandhan-donor-prediction-endpoint":
-            # Simple mock logic based on features
-            score = 0.5
-            if donor_features.get("eligibility_status") == "Eligible": score += 0.2
-            if donor_features.get("distance_km", 100) < 10: score += 0.2
-            return min(0.99, score)
+        # Removed local mock logic to strictly rely on real algorithms if endpoint fails
             
         response = sagemaker.invoke_endpoint(
             EndpointName=SAGEMAKER_ENDPOINT_NAME,
@@ -163,6 +157,7 @@ def find_donors(payload: MatchRequest, current_user: dict = Depends(get_current_
         matched_donors.append({
             "user_id": donor["user_id"],
             "name": donor.get("name", "Unknown"),
+            "email": donor.get("email", ""),
             "blood_group": donor_blood,
             "distance_km": round(distance, 1),
             "reliability_score": final_score,

@@ -74,6 +74,7 @@ def main():
     print("Copying source code...")
     # Core files
     shutil.copy("run_local.py", build_dir / "run_local.py")
+    shutil.copy("location_service.py", build_dir / "location_service.py")
     # Lambdas directory
     shutil.copytree("lambdas", build_dir / "lambdas")
     
@@ -148,6 +149,16 @@ def main():
         # URL already exists, just get it
         url_config = lambda_client.get_function_url_config(FunctionName=FUNCTION_NAME)
         function_url = url_config['FunctionUrl']
+
+    print("\nUpdating Lambda Environment Variables...")
+    lambda_client.update_function_configuration(
+        FunctionName=FUNCTION_NAME,
+        Environment={
+            'Variables': {
+                'API_BASE_URL': function_url
+            }
+        }
+    )
 
     print(f"\nDEPLOYMENT SUCCESSFUL!")
     print(f"Live API Endpoint: {function_url}")

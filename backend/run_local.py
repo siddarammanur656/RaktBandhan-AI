@@ -19,8 +19,7 @@ from lambdas.rb_send_outreach.main import app as outreach_app
 
 app = FastAPI(title="RaktBandhan AI - Local Aggregator")
 
-if not os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
-    app.add_middleware(
+app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
         allow_credentials=True,

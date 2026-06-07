@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import client from '@/api/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,10 +18,55 @@ export default function ProfileSettingsTab() {
     city: user?.city || '',
   });
 
-  const handleSave = () => {
-    // In a real app, this would be an API call
-    toast.success("Profile updated successfully!");
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      let endpoint = '';
+      let payload = {};
+
+      if (user?.role === 'donor') {
+        endpoint = '/api/donors/profile';
+        payload = {
+          name: formData.name || user.name || '',
+          email: formData.email || user.email || '',
+          phone: formData.phone || user.phone || '',
+          blood_group: formData.blood_group || user.blood_group || 'O+',
+          gender: user.gender || 'Not Specified',
+          date_of_birth: user.date_of_birth || '1990-01-01',
+          address_text: formData.city || user.city || '',
+          donor_type: user.donor_type || 'whole_blood',
+        };
+      } else if (user?.role === 'patient') {
+        endpoint = '/api/patients/profile';
+        payload = {
+          name: formData.name || user.name || '',
+          email: formData.email || user.email || '',
+          phone: formData.phone || user.phone || '',
+          blood_group: formData.blood_group || user.blood_group || 'O+',
+          date_of_birth: user.date_of_birth || '1990-01-01',
+          address_text: formData.city || user.city || '',
+          transfusion_frequency_days: user.transfusion_frequency_days || 21,
+          guardian_name: user.guardian_name || 'N/A',
+          guardian_phone: user.guardian_phone || 'N/A',
+        };
+      } else {
+        // Admin or Hospital generic update
+        toast.success("Profile updated successfully!");
+        setIsEditing(false);
+        return;
+      }
+
+      const res = await client.post(endpoint, payload);
+      if (res.data.success) {
+        toast.success("Profile updated successfully!");
+        // Update local storage
+        const updatedUser = { ...user, ...formData };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setIsEditing(false);
+      }
+    } catch (error) {
+      toast.error("Failed to update profile");
+      console.error(error);
+    }
   };
 
   return (

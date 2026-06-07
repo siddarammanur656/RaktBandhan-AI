@@ -16,7 +16,7 @@ import { UserCircle } from 'lucide-react';
 
 export default function PatientDashboard() {
   const { user } = useAuth();
-  const { nextTransfusion, assignedDonor, schedule, history, createRequest, loading } = usePatientData();
+  const { nextTransfusion, assignedDonor, activeRequests, schedule, history, createRequest, loading } = usePatientData();
   const [activeTab, setActiveTab] = useState('overview');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -54,6 +54,25 @@ export default function PatientDashboard() {
               
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
+                  {activeRequests?.length > 0 && (
+                    <div className="bg-white border border-[#E4E4E7] rounded-2xl p-6 shadow-sm">
+                      <h3 className="font-display text-xl font-bold mb-4 text-[#09090B]">Active Emergency Requests</h3>
+                      <div className="space-y-4">
+                        {activeRequests.map(req => (
+                          <div key={req.id} className="flex justify-between items-center p-4 bg-brand-50/50 rounded-xl border border-brand-100">
+                            <div>
+                              <p className="font-semibold text-[#09090B]">Request {req.id}</p>
+                              <p className="text-sm text-[#71717A]">Created: {req.date.toLocaleDateString()}</p>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <span className="font-bold text-brand-600 bg-white px-3 py-1 rounded-lg border border-brand-200 shadow-sm">{req.bloodGroup}</span>
+                              <span className="text-sm font-semibold capitalize px-3 py-1 bg-[#FAFAFA] border border-[#E4E4E7] rounded-full text-[#52525B]">{req.status}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <NextTransfusionCard data={nextTransfusion} />
                   </div>

@@ -78,38 +78,83 @@ def update_profile(request: PatientProfileRequest, current_user: dict = Depends(
         city, area = reverse_geocode(lat, lng)
     
     # Update Patient profile
-    users_table.update_item(
-        Key={"user_id": current_user["user_id"]},
-        UpdateExpression="set blood_group=:b, date_of_birth=:d, latitude=:lat, longitude=:lng, city=:c, transfusion_frequency_days=:f, guardian_name=:gn, guardian_phone=:gp",
-        ExpressionAttributeValues={
-            ":b": request.blood_group,
-            ":d": request.date_of_birth,
-            ":lat": Decimal(str(lat)) if lat else None,
-            ":lng": Decimal(str(lng)) if lng else None,
-            ":c": city,
-            ":f": Decimal(str(request.transfusion_frequency_days)),
-            ":gn": request.guardian_name,
-            ":gp": request.guardian_phone
-        }
-    )
+    update_expr_parts = [
+        "blood_group=:b", "date_of_birth=:d", "latitude=:lat",
+        "longitude=:lng", "city=:c", "transfusion_frequency_days=:f",
+        "guardian_name=:gn", "guardian_phone=:gp"
+    ]
+    expr_vals = {
+        ":b": request.blood_group,
+        ":d": request.date_of_birth,
+        ":lat": Decimal(str(lat)) if lat else None,
+        ":lng": Decimal(str(lng)) if lng else None,
+        ":c": city,
+        ":f": Decimal(str(request.transfusion_frequency_days)),
+        ":gn": request.guardian_name,
+        ":gp": request.guardian_phone
+    }
+    
+    expr_names = {}
+    if request.name:
+        update_expr_parts.append("#n=:n")
+        expr_vals[":n"] = request.name
+        expr_names["#n"] = "name"
+    if request.email:
+        update_expr_parts.append("email=:e")
+        expr_vals[":e"] = request.email
+    if request.phone:
+        update_expr_parts.append("phone=:p")
+        expr_vals[":p"] = request.phone
+
+    update_expr = "set " + ", ".join(update_expr_parts)
+    update_kwargs = {
+        "Key": {"user_id": current_user["user_id"]},
+        "UpdateExpression": update_expr,
+        "ExpressionAttributeValues": expr_vals
+    }
+    if expr_names:
+        update_kwargs["ExpressionAttributeNames"] = expr_names
+
+    users_table.update_item(**update_kwargs)
     
     # Calculate next transfusion date
     next_date = (datetime.utcnow() + timedelta(days=request.transfusion_frequency_days)).strftime("%Y-%m-%d")
     
-    # Create Schedule
-    schedule_id = f"sch_{uuid.uuid4().hex[:8]}"
-    schedules_table.put_item(Item={
-        "schedule_id": schedule_id,
-        "patient_id": current_user["user_id"],
-        "blood_group": request.blood_group,
-        "frequency_days": Decimal(str(request.transfusion_frequency_days)),
-        "start_date": datetime.utcnow().strftime("%Y-%m-%d"),
-        "next_transfusion_date": next_date,
-        "donor_pool": [],
-        "active_status": "true",
-        "created_at": datetime.utcnow().isoformat() + "Z",
-        "updated_at": datetime.utcnow().isoformat() + "Z"
-    })
+    # Check if schedule exists
+    schedule_resp = schedules_table.query(
+        IndexName="patient-index",
+        KeyConditionExpression=Key("patient_id").eq(current_user["user_id"])
+    )
+    existing_schedules = schedule_resp.get("Items", [])
+    
+    if existing_schedules:
+        # Update existing
+        sch = existing_schedules[0]
+        schedules_table.update_item(
+            Key={"schedule_id": sch["schedule_id"]},
+            UpdateExpression="set blood_group=:b, frequency_days=:f, next_transfusion_date=:n, updated_at=:u",
+            ExpressionAttributeValues={
+                ":b": request.blood_group,
+                ":f": Decimal(str(request.transfusion_frequency_days)),
+                ":n": next_date,
+                ":u": datetime.utcnow().isoformat() + "Z"
+            }
+        )
+    else:
+        # Create Schedule
+        schedule_id = f"sch_{uuid.uuid4().hex[:8]}"
+        schedules_table.put_item(Item={
+            "schedule_id": schedule_id,
+            "patient_id": current_user["user_id"],
+            "blood_group": request.blood_group,
+            "frequency_days": Decimal(str(request.transfusion_frequency_days)),
+            "start_date": datetime.utcnow().strftime("%Y-%m-%d"),
+            "next_transfusion_date": next_date,
+            "donor_pool": [],
+            "active_status": "true",
+            "created_at": datetime.utcnow().isoformat() + "Z",
+            "updated_at": datetime.utcnow().isoformat() + "Z"
+        })
     
     return {
         "success": True,
@@ -147,9 +192,9 @@ def get_dashboard(current_user: dict = Depends(get_current_user)):
                 
                 next_transfusion = {
                     "date": base_date_str,
-                    "donor_name": "Finding donor...",
+                    "donor_name": "Pending Match",
                     "donor_blood_group": current_user.get("blood_group", "Unknown"),
-                    "location": "Hospital",
+                    "location": current_user.get("city", "Unknown Hospital"),
                     "status": "scheduled",
                     "days_until": days_until
                 }
@@ -168,6 +213,16 @@ def get_dashboard(current_user: dict = Depends(get_current_user)):
             except ValueError:
                 pass
 
+    # Get active one-off requests from rb_requests
+    try:
+        req_resp = requests_table.scan(
+            FilterExpression=Key("patient_id").eq(user_id) & Key("status").is_in(["matching", "confirmed", "donor_confirmed"])
+        )
+        active_requests = req_resp.get("Items", [])
+    except Exception as e:
+        print("Error fetching active requests:", e)
+        active_requests = []
+
     # Get transfusion history from rb_donations using patient-index
     history_resp = donations_table.query(
         IndexName="patient-index",
@@ -178,7 +233,7 @@ def get_dashboard(current_user: dict = Depends(get_current_user)):
     for item in history_resp.get("Items", []):
         transfusion_history.append({
             "date": item.get("donation_date"),
-            "donor_name": "Donor (ID hidden)",
+            "donor_name": "Anonymous Donor",
             "location": item.get("location", "Unknown Hospital")
         })
         
@@ -205,6 +260,7 @@ def get_dashboard(current_user: dict = Depends(get_current_user)):
                 "status": "none",
                 "days_until": 0
             },
+            "active_requests": active_requests,
             "upcoming_schedule": upcoming_schedule,
             "transfusion_history": transfusion_history
         }

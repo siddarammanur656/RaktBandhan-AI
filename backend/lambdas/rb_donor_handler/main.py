@@ -6,6 +6,7 @@ from jose import jwt, JWTError
 import boto3
 from boto3.dynamodb.conditions import Key
 import os
+import math
 
 from decimal import Decimal
 from dotenv import load_dotenv
@@ -74,22 +75,47 @@ def update_profile(request: ProfileUpdateRequest, current_user: dict = Depends(g
     if lat and lng:
         city, area = reverse_geocode(lat, lng)
     
-    users_table.update_item(
-        Key={"user_id": current_user["user_id"]},
-        UpdateExpression="set blood_group=:b, gender=:g, date_of_birth=:d, latitude=:lat, longitude=:lng, donor_type=:dt, city=:c, area=:a, reliability_score=:rs, next_eligible_date=:ned",
-        ExpressionAttributeValues={
-            ":b": request.blood_group,
-            ":g": request.gender,
-            ":d": request.date_of_birth,
-            ":lat": Decimal(str(lat)) if lat else None,
-            ":lng": Decimal(str(lng)) if lng else None,
-            ":dt": request.donor_type,
-            ":c": city,
-            ":a": area,
-            ":rs": Decimal(str(50)),
-            ":ned": (datetime.utcnow() + timedelta(days=90)).strftime("%Y-%m-%d")
-        }
-    )
+    update_expr_parts = [
+        "blood_group=:b", "gender=:g", "date_of_birth=:d", "latitude=:lat",
+        "longitude=:lng", "donor_type=:dt", "city=:c", "area=:a",
+        "reliability_score=if_not_exists(reliability_score, :rs)",
+        "next_eligible_date=if_not_exists(next_eligible_date, :ned)"
+    ]
+    expr_vals = {
+        ":b": request.blood_group,
+        ":g": request.gender,
+        ":d": request.date_of_birth,
+        ":lat": Decimal(str(lat)) if lat else None,
+        ":lng": Decimal(str(lng)) if lng else None,
+        ":dt": request.donor_type,
+        ":c": city,
+        ":a": area,
+        ":rs": Decimal(str(50)),
+        ":ned": (datetime.utcnow() + timedelta(days=90)).strftime("%Y-%m-%d")
+    }
+    
+    expr_names = {}
+    if request.name:
+        update_expr_parts.append("#n=:n")
+        expr_vals[":n"] = request.name
+        expr_names["#n"] = "name"
+    if request.email:
+        update_expr_parts.append("email=:e")
+        expr_vals[":e"] = request.email
+    if request.phone:
+        update_expr_parts.append("phone=:p")
+        expr_vals[":p"] = request.phone
+
+    update_expr = "set " + ", ".join(update_expr_parts)
+    update_kwargs = {
+        "Key": {"user_id": current_user["user_id"]},
+        "UpdateExpression": update_expr,
+        "ExpressionAttributeValues": expr_vals
+    }
+    if expr_names:
+        update_kwargs["ExpressionAttributeNames"] = expr_names
+
+    users_table.update_item(**update_kwargs)
     
     return {
         "success": True,
@@ -133,6 +159,15 @@ def update_location(request: LocationUpdateRequest, current_user: dict = Depends
         }
     }
 
+def calculate_haversine_distance(lat1, lon1, lat2, lon2):
+    R = 6371
+    dLat = math.radians(lat2 - lat1)
+    dLon = math.radians(lon2 - lon1)
+    a = math.sin(dLat/2) * math.sin(dLat/2) + math.cos(math.radians(lat1)) \
+        * math.cos(math.radians(lat2)) * math.sin(dLon/2) * math.sin(dLon/2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return R * c
+
 @app.get("/api/donors/dashboard")
 def get_dashboard(current_user: dict = Depends(get_current_user)):
     # Calculate days until eligible
@@ -148,9 +183,44 @@ def get_dashboard(current_user: dict = Depends(get_current_user)):
         except ValueError:
             pass
 
-    # Mock pending requests assigned to donor
-    # Real logic would query rb_requests where assigned_donor_id == current_user['user_id']
+    # Fetch pending requests assigned/contacted to this donor
     pending_requests = []
+    try:
+        # For demo purposes we can scan for matching status
+        req_resp = requests_table.scan(
+            FilterExpression=Key("status").eq("matching")
+        )
+        for req in req_resp.get("Items", []):
+            contacted = req.get("donors_contacted", [])
+            # Only show if they were contacted by AI or if they match the city (fallback for demo)
+            if current_user["user_id"] in contacted or (req.get("city") == current_user.get("city") and req.get("blood_group") == current_user.get("blood_group")):
+                # Fetch patient name
+                p_name = "Unknown"
+                if req.get("patient_id"):
+                    p_resp = users_table.get_item(Key={"user_id": req["patient_id"]})
+                    if p_resp.get("Item"):
+                        p_name = p_resp["Item"].get("name", "Unknown")
+                        
+                dist = "N/A"
+                if req.get("latitude") and req.get("longitude") and current_user.get("latitude") and current_user.get("longitude"):
+                    try:
+                        dist = round(calculate_haversine_distance(
+                            float(current_user["latitude"]), float(current_user["longitude"]),
+                            float(req["latitude"]), float(req["longitude"])
+                        ), 1)
+                    except:
+                        pass
+
+                pending_requests.append({
+                    "request_id": req["request_id"],
+                    "patient_name": p_name,
+                    "blood_group_needed": req["blood_group"],
+                    "distance_km": dist,
+                    "urgency": req.get("urgency", "Normal"),
+                    "hospital": req.get("city", "Unknown Hospital")
+                })
+    except Exception as e:
+        print("Error fetching donor requests:", e)
     
     # Mock recent donations
     # Real logic would query rb_donations GSI donor-index
@@ -161,10 +231,16 @@ def get_dashboard(current_user: dict = Depends(get_current_user)):
         KeyConditionExpression=Key("donor_id").eq(current_user["user_id"])
     )
     for item in response.get("Items", []):
+        p_name = "Anonymous Patient"
+        if item.get("patient_id"):
+            p_resp = users_table.get_item(Key={"user_id": item["patient_id"]})
+            if p_resp.get("Item"):
+                p_name = p_resp["Item"].get("name", "Anonymous Patient")
+                
         recent_donations.append({
             "donation_id": item["donation_id"],
             "date": item.get("donation_date"),
-            "patient_name": "Patient", # Would need to join or store patient name
+            "patient_name": p_name,
             "location": item.get("location")
         })
 
@@ -208,14 +284,26 @@ def accept_request(request_id: str, current_user: dict = Depends(get_current_use
         }
     )
     
+    # Fetch real request details
+    req_resp = requests_table.get_item(Key={"request_id": request_id})
+    req = req_resp.get("Item", {})
+    
+    p_contact = "N/A"
+    if req.get("patient_id"):
+        p_resp = users_table.get_item(Key={"user_id": req["patient_id"]})
+        if p_resp.get("Item"):
+            p_contact = p_resp["Item"].get("phone", p_resp["Item"].get("email", "N/A"))
+            
+    apt_date = req.get("required_date", (datetime.utcnow() + timedelta(days=1)).isoformat() + "Z")
+    
     return {
         "success": True,
         "data": {
             "request_id": request_id,
             "status": "accepted",
-            "appointment_date": (datetime.utcnow() + timedelta(days=1)).isoformat() + "Z",
-            "location": "Hospital",
-            "patient_contact": "+910000000000"
+            "appointment_date": apt_date,
+            "location": req.get("city", "Unknown Hospital"),
+            "patient_contact": p_contact
         },
         "message": "Thank you! Appointment confirmed."
     }

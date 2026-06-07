@@ -62,3 +62,5 @@ backend/data/emails/
 *.h5
 *.pt
 *.pth
+
+backend/*.zip

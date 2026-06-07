@@ -5,7 +5,10 @@ import os
 
 from .schemas import OutreachRequest, PatientNotificationRequest
 
-app = FastAPI(title="RaktBandhan AI - Outreach Handler (Local Mock)")
+import boto3
+from botocore.exceptions import ClientError
+
+app = FastAPI(title="RaktBandhan AI - Outreach Handler")
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,8 +18,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+REGION = os.getenv("AWS_REGION", "us-east-1")
+ses_client = boto3.client('ses', region_name=REGION)
+SENDER_EMAIL = "siddarammanur656@gmail.com"
+
 TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), 'templates', 'outreach_email.html')
-EMAILS_OUTPUT_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'emails')
+PATIENT_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), 'templates', 'patient_notification.html')
+
+def send_ses_email(to_address: str, subject: str, html_body: str):
+    try:
+        response = ses_client.send_email(
+            Destination={
+                'ToAddresses': [to_address],
+            },
+            Message={
+                'Body': {
+                    'Html': {
+                        'Charset': "UTF-8",
+                        'Data': html_body,
+                    },
+                },
+                'Subject': {
+                    'Charset': "UTF-8",
+                    'Data': subject,
+                },
+            },
+            Source=f"RaktBandhan AI <{SENDER_EMAIL}>",
+        )
+        return response
+    except ClientError as e:
+        print(f"SES Error: {e.response['Error']['Message']}")
+        raise HTTPException(status_code=500, detail="Failed to send email")
 
 @app.post("/api/outreach/send")
 def send_outreach_email(payload: OutreachRequest):
@@ -36,22 +68,15 @@ def send_outreach_email(payload: OutreachRequest):
         .replace("{required_by_date}", payload.required_by_date) \
         .replace("{request_id}", payload.request_id)
     
-    # Save the mocked email locally
-    os.makedirs(EMAILS_OUTPUT_DIR, exist_ok=True)
-    output_filename = f"{payload.request_id}_{payload.donor_id}.html"
-    output_path = os.path.join(EMAILS_OUTPUT_DIR, output_filename)
+    # Send via SES
+    subject = f"URGENT: {payload.blood_group} Blood Required Nearby"
+    send_ses_email(payload.donor_email, subject, html_content)
     
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-        
-    print(f"Mock SES: Sent email to {payload.donor_email}. Saved to {output_path}")
+    print(f"SES: Sent email to {payload.donor_email} successfully.")
     
     return {
         "success": True,
-        "message": f"Email successfully generated and sent to {payload.donor_email}",
-        "data": {
-            "file_path": output_path
-        }
+        "message": f"Email successfully sent to {payload.donor_email}"
     }
 
 PATIENT_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), 'templates', 'patient_notification.html')
@@ -71,21 +96,15 @@ def notify_patient_email(payload: PatientNotificationRequest):
         .replace("{confirmed_date}", payload.confirmed_date) \
         .replace("{donor_name}", payload.donor_name)
     
-    os.makedirs(EMAILS_OUTPUT_DIR, exist_ok=True)
-    output_filename = f"patient_notification_{payload.request_id}.html"
-    output_path = os.path.join(EMAILS_OUTPUT_DIR, output_filename)
+    # Send via SES
+    subject = "RaktBandhan: A Donor has accepted your request!"
+    send_ses_email(payload.patient_email, subject, html_content)
     
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-        
-    print(f"Mock SES: Sent patient notification to {payload.patient_email}. Saved to {output_path}")
+    print(f"SES: Sent patient notification to {payload.patient_email} successfully.")
     
     return {
         "success": True,
-        "message": f"Patient notification successfully generated and sent to {payload.patient_email}",
-        "data": {
-            "file_path": output_path
-        }
+        "message": f"Patient notification successfully sent to {payload.patient_email}"
     }
 
 # Lambda handler

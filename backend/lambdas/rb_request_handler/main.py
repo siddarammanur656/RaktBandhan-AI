@@ -73,9 +73,13 @@ def get_admin_user(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail={"success": False, "error": "Admin access required", "code": "FORBIDDEN"})
     return current_user
 
-def trigger_matching_and_outreach(request_id: str, lat: float, lng: float, blood_group: str, city: str, required_by_date: str, token: str):
+def trigger_matching_and_outreach(request_id: str, lat: float, lng: float, blood_group: str, city: str, required_by_date: str, token: str, patient_id: str = None):
     try:
-        base_url = os.getenv("FRONTEND_URL", "http://localhost:5173").replace("5173", "8000")
+        api_base_url = os.getenv("API_BASE_URL", "http://localhost:8000")
+        # Ensure no trailing slash
+        if api_base_url.endswith("/"):
+            api_base_url = api_base_url[:-1]
+            
         headers = {"Authorization": f"Bearer {token}"}
         
         match_payload = {
@@ -86,9 +90,9 @@ def trigger_matching_and_outreach(request_id: str, lat: float, lng: float, blood
             "limit": 3
         }
         
-        print(f"Triggering AI Matching for {request_id}...")
+        print(f"Triggering AI Matching for {request_id} via {api_base_url}/api/match/find-donors...")
         with httpx.Client() as client:
-            resp = client.post(f"{base_url}/api/match/find-donors", json=match_payload, headers=headers, timeout=30.0)
+            resp = client.post(f"{api_base_url}/api/match/find-donors", json=match_payload, headers=headers, timeout=30.0)
             
             if resp.status_code != 200:
                 print(f"Matching failed: {resp.text}")
@@ -99,21 +103,27 @@ def trigger_matching_and_outreach(request_id: str, lat: float, lng: float, blood
             
             print(f"Found {len(donors)} top donors. Triggering outreach...")
             
+            p_name = "Patient"
+            if patient_id:
+                p_resp = users_table.get_item(Key={"user_id": patient_id})
+                if p_resp.get("Item"):
+                    p_name = p_resp["Item"].get("name", "Patient")
+            
             contacted = []
             for d in donors:
                 outreach_payload = {
                     "request_id": request_id,
                     "donor_id": d["user_id"],
                     "donor_name": d["name"],
-                    "donor_email": f"{d['name'].split()[0].lower()}@mockdonor.com",
-                    "patient_name": "Patient",
+                    "donor_email": d.get("email", ""),
+                    "patient_name": p_name,
                     "blood_group": blood_group,
                     "hospital_location": city,
                     "distance_km": d.get("distance_km", 0),
                     "required_by_date": required_by_date
                 }
                 
-                o_resp = client.post(f"{base_url}/api/outreach/send", json=outreach_payload, headers=headers, timeout=10.0)
+                o_resp = client.post(f"{api_base_url}/api/outreach/send", json=outreach_payload, headers=headers, timeout=10.0)
                 if o_resp.status_code == 200:
                     contacted.append(d["user_id"])
             
@@ -131,8 +141,10 @@ def trigger_matching_and_outreach(request_id: str, lat: float, lng: float, blood
 
 def trigger_patient_notification(request_id: str, req_data: dict, donor_id: str, confirmed_date: str):
     try:
-        base_url = os.getenv("FRONTEND_URL", "http://localhost:5173").replace("5173", "8000")
-        
+        api_base_url = os.getenv("API_BASE_URL", "http://localhost:8000")
+        if api_base_url.endswith("/"):
+            api_base_url = api_base_url[:-1]
+            
         d_resp = users_table.get_item(Key={"user_id": donor_id})
         donor_name = d_resp.get("Item", {}).get("name", "A generous donor") if d_resp.get("Item") else "A generous donor"
         
@@ -157,9 +169,9 @@ def trigger_patient_notification(request_id: str, req_data: dict, donor_id: str,
             "confirmed_date": confirmed_date
         }
         
-        print(f"Triggering Patient Notification for {request_id}...")
+        print(f"Triggering Patient Notification for {request_id} via {api_base_url}/api/outreach/notify-patient...")
         with httpx.Client() as client:
-            resp = client.post(f"{base_url}/api/outreach/notify-patient", json=payload, timeout=10.0)
+            resp = client.post(f"{api_base_url}/api/outreach/notify-patient", json=payload, timeout=10.0)
             if resp.status_code != 200:
                 print(f"Failed to notify patient: {resp.text}")
             else:
@@ -207,7 +219,7 @@ def create_request(payload: CreateRequest, background_tasks: BackgroundTasks, au
     
     # Trigger AI matching & emailing
     token = authorization.split(" ")[1] if authorization else ""
-    background_tasks.add_task(trigger_matching_and_outreach, request_id, float(lat) if lat else 0.0, float(lng) if lng else 0.0, payload.blood_group, city, payload.required_by_date, token)
+    background_tasks.add_task(trigger_matching_and_outreach, request_id, float(lat) if lat else 0.0, float(lng) if lng else 0.0, payload.blood_group, city, payload.required_by_date, token, payload.patient_id)
     
     return {
         "success": True,
